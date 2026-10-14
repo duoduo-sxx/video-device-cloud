@@ -1,0 +1,49 @@
+# electron-builder 打包配置（文档：https://www.electron.build/configuration）
+# 产物输出到 release/ 目录：
+#   - video-device-cloud-<version>-Setup.exe     NSIS 安装包
+#   - video-device-cloud-<version>-Portable.exe  免安装便携版（单文件，双击即用）
+appId: com.videocloud.dataservice
+productName: 视频设备云数据服务系统
+copyright: Copyright © 2026 Video Cloud Team
+
+directories:
+  output: release
+  buildResources: build
+
+# 前端依赖已全部由 Vite 打进 dist/，无需携带 node_modules
+files:
+  - dist/**/*
+  - electron/**/*
+  - package.json
+  - '!node_modules/**/*'
+
+asar: true
+compression: maximum
+npmRebuild: false
+
+win:
+  icon: build/icon.ico
+  target:
+    - target: nsis
+      arch: [x64]
+    - target: portable
+      arch: [x64]
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowElevation: true
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: 视频设备云数据服务系统
+  deleteAppDataOnUninstall: false
+  language: '2052' # 简体中文安装界面
+  installerIcon: build/icon.ico
+  uninstallerIcon: build/icon.ico
+  # artifactName 使用 ${name}（package.json 的 name，纯 ASCII），避免中文文件名在 CI/网关上的编码问题
+  artifactName: ${name}-${version}-${arch}-Setup.${ext}
+
+portable:
+  requestExecutionLevel: user
+  artifactName: ${name}-${version}-${arch}-Portable.${ext}

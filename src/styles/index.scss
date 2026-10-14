@@ -1,0 +1,202 @@
+/* 全局设计变量 */
+:root {
+  --vc-primary: #1677ff;
+  --vc-success: #52c41a;
+  --vc-warning: #faad14;
+  --vc-danger: #ff4d4f;
+  --vc-info: #8c8c8c;
+  --vc-radius: 8px;
+  --vc-header-height: 56px;
+  --vc-tabbar-height: 40px;
+  --vc-sidebar-width: 220px;
+  --vc-sidebar-collapsed: 64px;
+  --vc-content-padding: 16px 20px;
+  --vc-card-gap: 16px;
+}
+
+/* Element Plus 主题覆盖 */
+:root {
+  --el-color-primary: #1677ff;
+  --el-color-success: #52c41a;
+  --el-color-warning: #faad14;
+  --el-color-danger: #ff4d4f;
+  --el-color-error: #ff4d4f;
+  --el-color-info: #8c8c8c;
+  --el-border-radius-base: 8px;
+  --el-font-size-base: 13px;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', 'Helvetica Neue', Arial, sans-serif;
+  font-size: 13px;
+  color: var(--el-text-color-primary);
+  background: #f5f7fa;
+  -webkit-font-smoothing: antialiased;
+}
+
+html.dark body {
+  background: #141414;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(140, 140, 140, 0.35);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(140, 140, 140, 0.55);
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* 通用布局工具类 */
+.vc-page {
+  padding: var(--vc-content-padding);
+}
+
+.vc-card {
+  background: var(--el-bg-color);
+  border-radius: var(--vc-radius);
+  border: 1px solid var(--el-border-color-lighter);
+}
+
+.vc-flex {
+  display: flex;
+}
+
+.vc-flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.vc-gap-8 {
+  gap: 8px;
+}
+
+.vc-gap-16 {
+  gap: 16px;
+}
+
+.vc-mb-16 {
+  margin-bottom: 16px;
+}
+
+.vc-text-secondary {
+  color: var(--el-text-color-secondary);
+}
+
+.vc-text-tertiary {
+  color: var(--el-text-color-placeholder);
+}
+
+.vc-mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.vc-nowrap {
+  white-space: nowrap;
+}
+
+.vc-link {
+  color: var(--vc-primary);
+  cursor: pointer;
+}
+
+.vc-link:hover {
+  text-decoration: underline;
+}
+
+/* 表格内紧凑展示 */
+.el-table .cell {
+  font-size: 13px;
+}
+
+.el-table__header th {
+  background: var(--el-fill-color-light) !important;
+  font-weight: 500;
+}
+
+/* 卡片标题 */
+.vc-panel-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  margin: 0 0 12px;
+}
+
+/* 骨架屏行 */
+.vc-skeleton {
+  padding: 12px 0;
+}
+
+/* 实时事件脉冲点 */
+.vc-pulse {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--vc-danger);
+  position: relative;
+}
+
+.vc-pulse::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 2px solid var(--vc-danger);
+  opacity: 0.5;
+  animation: vc-pulse 1.6s ease-out infinite;
+}
+
+@keyframes vc-pulse {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}
+
+/* 拖拽把手 */
+.vc-drag-handle {
+  cursor: move;
+}
+
+/* 滚动列表 */
+.vc-scroll {
+  overflow: auto;
+}
+
+/* 页面淡入 */
+.vc-fade-enter-active {
+  transition: opacity 0.18s ease;
+}
+
+.vc-fade-enter-from {
+  opacity: 0;
+}
