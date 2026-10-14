@@ -51,7 +51,7 @@ export const systemRoutes = [
       if (user.status === 0) throwBiz(400, '账号已被停用，请联系管理员')
       const expect = PASSWORDS[username] || '123456'
       if (password !== expect && password !== '123456') {
-        throwBiz(400, '密码错误，演示账号密码为 admin123（admin）或其他账号 123456')
+        throwBiz(400, '账号或密码错误，请检查后重新输入')
       }
       const role = table('roles').find((r: any) => r.id === user.roleIds[0])
       const token = 'mock-token-' + username + '-' + Date.now()

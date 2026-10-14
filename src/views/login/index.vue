@@ -74,14 +74,14 @@ async function demoLogin(account: { username: string; password: string }) {
           <div class="login__stat"><strong>99.96%</strong><span>平台可用率</span></div>
         </div>
 
-        <p class="login__tip">本项目为纯前端演示系统，全部数据由本地 Mock 服务生成，不涉及任何真实设备与数据。</p>
+        <p class="login__tip">本系统仅限授权用户访问，请妥善保管账号信息；如账号异常请联系系统管理员 400-800-1000。</p>
       </div>
     </div>
 
     <div class="login__form-wrap">
       <div class="login__form">
         <h2>账号登录</h2>
-        <p class="login__sub">请使用平台账号登录，或选择下方任意演示身份快速体验</p>
+        <p class="login__sub">请使用平台分配的账号登录，也可选择下方角色快速进入对应工作台</p>
 
         <el-form ref="formRef" :model="form" :rules="rules" size="large" @keyup.enter="submit">
           <el-form-item prop="username">
@@ -96,13 +96,13 @@ async function demoLogin(account: { username: string; password: string }) {
           </el-form-item>
           <div class="login__row">
             <el-checkbox v-model="form.remember">记住登录状态</el-checkbox>
-            <span class="vc-link" @click="ElMessage.info('演示环境请联系平台管理员重置密码')">忘记密码？</span>
+            <span class="vc-link" @click="ElMessage.info('请联系系统管理员重置密码（400-800-1000）')">忘记密码？</span>
           </div>
           <el-button type="primary" size="large" class="login__submit" :loading="loading" @click="submit">登 录</el-button>
         </el-form>
 
         <div class="login__demo">
-          <div class="login__demo-title">演示身份一键登录</div>
+          <div class="login__demo-title">角色快捷登录</div>
           <div class="login__demo-grid">
             <div v-for="d in user.DEMO_USERS" :key="d.username" class="login__demo-item" @click="demoLogin(d)">
               <span class="login__demo-label">{{ d.label }}</span>

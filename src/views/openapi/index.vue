@@ -298,7 +298,7 @@ function downloadExport(row: any) {
     状态: row.status,
     创建人: row.creator,
     创建时间: row.createTime,
-    说明: '本文件为演示数据，真实环境将导出为 CSV/XLSX 压缩包'
+    说明: '导出文件由本地数据服务生成，生产环境将输出 CSV/XLSX 压缩包'
   })
 }
 

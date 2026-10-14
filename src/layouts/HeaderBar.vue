@@ -59,12 +59,12 @@ function toggleFullscreen() {
 
 async function resetDemo() {
   await ElMessageBox.confirm(
-    '重置后，本机所有新增/修改/删除的数据都会被还原为初始演示数据，且无法恢复。是否继续？',
-    '重置演示数据',
+    '重置后，本机所有新增/修改/删除的数据都会被还原为系统初始数据集，且无法恢复。是否继续？',
+    '恢复初始数据',
     { type: 'warning', confirmButtonText: '确认重置', cancelButtonText: '取消' }
   )
   await systemApi.resetDemo()
-  ElMessage.success('演示数据已重置，页面即将刷新')
+  ElMessage.success('数据已恢复至初始状态，页面即将刷新')
   setTimeout(() => window.location.reload(), 600)
 }
 
@@ -166,7 +166,7 @@ watch(() => route.path, updateBreadcrumb, { immediate: true })
               <el-icon><component :is="'MagicStick'" /></el-icon>切换主题
             </el-dropdown-item>
             <el-dropdown-item command="reset" divided>
-              <el-icon><component :is="'RefreshLeft'" /></el-icon>重置演示数据
+              <el-icon><component :is="'RefreshLeft'" /></el-icon>恢复初始数据
             </el-dropdown-item>
             <el-dropdown-item command="about">
               <el-icon><component :is="'InfoFilled'" /></el-icon>关于系统

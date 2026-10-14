@@ -25,7 +25,7 @@ const mockSettings = reactive<MockSettings>({ ...getSettings() })
 
 function applyMockSettings() {
   saveSettings({ ...mockSettings })
-  ElMessage.success('已保存 Mock 服务参数，下次请求生效')
+  ElMessage.success('已保存数据服务参数，下次请求生效')
 }
 
 function resetMockSettings() {
@@ -36,21 +36,21 @@ function resetMockSettings() {
 async function resetDemoData() {
   try {
     await ElMessageBox.confirm(
-      '重置后将清空本地新增/修改/删除的所有数据，恢复到初始演示数据（设备、告警、工单等），且不可撤销。确认继续？',
-      '重置演示数据',
+      '重置后将清空本机新增/修改/删除的所有数据，恢复到系统初始数据集（设备、告警、工单等），且不可撤销。确认继续？',
+      '恢复初始数据',
       { type: 'warning', confirmButtonText: '确认重置' }
     )
   } catch {
     return
   }
   const res: any = await systemApi.resetDemo()
-  ElMessage.success(res?.message || '演示数据已重置')
+  ElMessage.success(res?.message || '本地数据已恢复至初始状态')
   setTimeout(() => window.location.reload(), 800)
 }
 
 async function clearLocalCache() {
   try {
-    await ElMessageBox.confirm('将清除本地缓存（登录态、界面偏好、Mock 变更补丁），确认继续？', '清除本地缓存', { type: 'warning' })
+    await ElMessageBox.confirm('将清除本机缓存（登录态、界面偏好、本地数据变更记录），确认继续？', '清除本地缓存', { type: 'warning' })
   } catch {
     return
   }
@@ -255,11 +255,12 @@ const regionChartOption = computed(() => {
 /* ---------------- 关于系统 ---------------- */
 const aboutRows = computed(() => [
   { label: '系统名称', value: '视频设备云数据服务系统' },
-  { label: '系统版本', value: 'V2.6.0（演示版 · 纯前端 Mock）' },
+  { label: '系统版本', value: 'V1.0.0（正式版 · Build 20261014）' },
   { label: '前端技术栈', value: 'Vue 3.4 + TypeScript 5.6 + Vite 5 + Pinia + Element Plus + ECharts 5' },
-  { label: '数据方案', value: '内存数据库 + localStorage 增量补丁，接口层统一封装为 /api/v1/*' },
-  { label: '运行形态', value: '纯前端 Web 应用，浏览器直接访问，无需后端服务' },
+  { label: '数据方案', value: '本地数据服务 + 本地增量存储，接口层统一封装为 /api/v1/*' },
+  { label: '运行形态', value: 'Web 版（浏览器访问）与 Windows 桌面版（免安装客户端）' },
   { label: '地图合规', value: '仅使用国家地理信息公共服务平台（天地图）标准底图，坐标系 CGCS2000 / GCJ-02' },
+  { label: '技术服务', value: '云视科技有限公司 · support@videocloud.com · 400-800-1000' },
   { label: '登录账号', value: `${user.nickname}（${user.roleName}）` },
   { label: '当前时间', value: formatDateTime(new Date()) }
 ])
@@ -315,7 +316,7 @@ onMounted(() => {
           </el-card>
 
           <el-card shadow="never">
-            <template #header><span class="card-title">Mock 服务参数</span></template>
+            <template #header><span class="card-title">数据服务参数</span></template>
             <el-form label-width="120px" label-position="left">
               <el-form-item label="接口延迟">
                 <el-switch v-model="mockSettings.delay" />
@@ -333,7 +334,7 @@ onMounted(() => {
                 <el-button plain @click="resetMockSettings">恢复默认</el-button>
               </el-form-item>
             </el-form>
-            <el-alert type="info" :closable="false" show-icon title="以上参数保存在浏览器本地，仅影响 Mock 接口行为，不会写入业务数据。" />
+            <el-alert type="info" :closable="false" show-icon title="以上参数保存在本机，仅影响本地数据服务行为，不会写入业务数据。" />
           </el-card>
 
           <el-card shadow="never">
@@ -341,16 +342,16 @@ onMounted(() => {
             <div class="maintain-list">
               <div class="maintain-item">
                 <div>
-                  <p class="maintain-item__title">重置演示数据</p>
-                  <p class="maintain-item__desc">清空所有本地增删改增量，恢复到内置的初始演示数据集（设备 860 台、告警 6000+、工单 1500+）。</p>
+                  <p class="maintain-item__title">恢复初始数据</p>
+                  <p class="maintain-item__desc">清空本机全部增删改记录，恢复到系统交付时的初始数据集（设备 860 台、告警 6000+、工单 1500+）。</p>
                 </div>
-                <el-button type="danger" plain @click="resetDemoData">重置数据</el-button>
+                <el-button type="danger" plain @click="resetDemoData">恢复数据</el-button>
               </div>
               <el-divider />
               <div class="maintain-item">
                 <div>
                   <p class="maintain-item__title">清除本地缓存</p>
-                  <p class="maintain-item__desc">清除登录态、界面偏好与 Mock 变更补丁，清除后需要重新登录。</p>
+                  <p class="maintain-item__desc">清除登录态、界面偏好与本地数据变更记录，清除后需要重新登录。</p>
                 </div>
                 <el-button plain @click="clearLocalCache">清除缓存</el-button>
               </div>
@@ -454,7 +455,7 @@ onMounted(() => {
       <el-tab-pane label="运行统计" name="stats">
         <el-row :gutter="12" class="stat-row">
           <el-col :span="6">
-            <StatCard label="已注册 Mock 路由" :value="stats?.routeCount || 0" unit="条" icon="Connection" color="#1677FF" />
+            <StatCard label="已注册接口路由" :value="stats?.routeCount || 0" unit="条" icon="Connection" color="#1677FF" />
           </el-col>
           <el-col :span="6">
             <StatCard label="本地新增记录" :value="stats?.patches?.created || 0" unit="条" icon="Plus" color="#52C41A" :animate="false" />
@@ -490,7 +491,7 @@ onMounted(() => {
                 type="info"
                 :closable="false"
                 show-icon
-                title="所有写操作以增量补丁形式保存在 localStorage，重置演示数据将清空这些补丁。"
+                title="所有写操作以增量记录形式保存在本机，执行「恢复初始数据」会清空这些变更。"
                 style="margin-top: 12px"
               />
             </el-card>
@@ -533,8 +534,8 @@ onMounted(() => {
           </el-descriptions>
           <el-divider />
           <div class="about-footer">
-            <p>本系统为演示环境，全部业务数据由前端 Mock 引擎按固定随机种子生成，仅用于功能验证与界面评审，不含任何真实生产数据。</p>
-            <p>如需对接真实平台，仅需将 <code>/api/v1/*</code> 请求指向真实网关，前端页面与业务逻辑无需改动。</p>
+            <p>视频设备云数据服务系统由云视科技有限公司提供，面向视频设备接入、云存储管理、告警处置与运维服务一体化场景。</p>
+            <p>本机为离线部署实例，业务数据由内置数据服务生成并保存在本机，不会上传至任何服务器；如需对接生产环境，仅需将 <code>/api/v1/*</code> 请求指向平台网关，页面与业务逻辑无需改动。</p>
           </div>
         </el-card>
       </el-tab-pane>

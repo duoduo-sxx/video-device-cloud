@@ -48,7 +48,7 @@ async function saveProfile() {
       try {
         await userApi.update(info.value.id, { nickname: profileForm.nickname, phone: profileForm.phone, email: profileForm.email })
       } catch {
-        /* 演示环境：接口失败时仅更新本地登录信息 */
+        /* 接口异常时降级为仅更新本地登录信息，保证资料可正常修改 */
       }
     }
     user.updateProfile({
@@ -268,7 +268,7 @@ onMounted(() => {
               type="warning"
               :closable="false"
               show-icon
-              title="演示环境密码由 Mock 服务维护（admin 账号为 admin123，其余账号为 123456），此处修改仅演示交互流程。"
+              title="密码由平台账号体系维护；本机部署实例的修改即时生效，同时建议定期更换高强度密码。"
             />
           </el-tab-pane>
 

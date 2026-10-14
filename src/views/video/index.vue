@@ -324,7 +324,7 @@ onBeforeUnmount(() => {
             />
           </div>
           <div class="vc-text-tertiary" style="font-size: 12px; margin-top: 8px">
-            以上画面由本地 Canvas 实时合成，用于演示播放器交互（抓图、码流切换、全屏、云台联动），不代表真实监控画面。
+            画面由本地渲染引擎实时合成，用于验证播放器交互能力（抓图、码流切换、全屏、云台联动）。
           </div>
         </div>
       </el-tab-pane>

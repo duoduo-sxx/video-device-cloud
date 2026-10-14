@@ -65,7 +65,7 @@ export const mockAdapter: AxiosAdapter = async (config): Promise<AxiosResponse> 
 
   if (!matched) {
     await delay(80)
-    const resp = fail(404, `Mock 接口不存在：${method} ${pathname}`)
+    const resp = fail(404, `接口不存在：${method} ${pathname}`)
     return buildResponse(resp, 404, config)
   }
 

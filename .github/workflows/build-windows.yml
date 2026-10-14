@@ -1,13 +1,13 @@
-# GitHub Actions：云端打包 Windows 桌面应用（.exe）
+# GitHub Actions：云端打包 Windows 桌面应用（单个免安装 exe）
 #
 # 触发方式（二选一）：
 #   1. 手动：仓库 Actions 页 → Build Windows EXE → Run workflow
 #   2. 自动：推送 v 开头的标签（如 git tag v1.0.0 && git push origin v1.0.0），
 #      构建完成后自动创建 GitHub Release 并附上 exe
 #
-# 产物（Actions Artifacts 或 Release 附件）：
-#   - video-device-cloud-<版本>-x64-Setup.exe     NSIS 安装包（中文界面、桌面/开始菜单快捷方式、可卸载）
-#   - video-device-cloud-<版本>-x64-Portable.exe  免安装便携版（单文件，双击即用）
+# 产物：video-device-cloud 便携版单文件 exe
+#   release/视频设备云数据服务系统-V<版本>-便携版.exe
+#   双击即可运行，无需安装；文件属性中的「文件说明 / 产品名称 / 公司名称 / 版本」均来自 package.json 与 electron-builder.yml
 
 name: Build Windows EXE
 
@@ -63,15 +63,33 @@ jobs:
       - name: 构建前端产物
         run: pnpm build
 
-      - name: 打包 Windows（便携版 + 安装包）
+      - name: 打包 Windows 便携版单文件 exe
         run: pnpm exec electron-builder --win --x64 --publish never
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: 列出产物
+        shell: pwsh
+        run: Get-ChildItem release -Filter *.exe | Select-Object Name, @{n='SizeMB';e={[math]::Round($_.Length/1MB,1)}}
+
+      # 关键校验：确认前端产物确实被打进应用包，避免出现"双击无反应"（界面资源缺失导致加载失败）
+      - name: 校验包内前端资源
+        shell: pwsh
+        run: |
+          $asar = "release/win-unpacked/resources/app.asar"
+          if (-not (Test-Path $asar)) { Write-Error "未找到 $asar，打包结构异常"; exit 1 }
+          $list = npx --yes @electron/asar@3 list $asar
+          if ($list -match 'dist[\\/]index.html') {
+            Write-Host "校验通过：app.asar 内已包含 dist/index.html 与 electron 主进程"
+          } else {
+            Write-Error "校验失败：app.asar 内缺少 dist/index.html，运行时会无响应"
+            exit 1
+          }
+
       - name: 上传构建产物
         uses: actions/upload-artifact@v4
         with:
-          name: windows-exe
+          name: video-device-cloud-windows-exe
           path: release/*.exe
           if-no-files-found: error
           retention-days: 30
