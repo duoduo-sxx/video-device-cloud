@@ -1,22 +1,28 @@
 # GitHub Actions：云端打包 Windows 桌面应用（单个免安装 exe）
 #
-# 触发方式（二选一）：
+# 打包形式与本地脚本 pack-win.bat 完全一致：
+#   - electron / electron-builder 不写进项目依赖，打包时通过 npx 按需拉取
+#   - 桌面端代码独立放在 desktop/ 目录（package.json + main.cjs）
+#   - 前端产物 dist/ 作为额外资源打进 resources/renderer
+#
+# 触发方式（三选一）：
 #   1. 手动：仓库 Actions 页 → Build Windows EXE → Run workflow
-#   2. 自动：推送 v 开头的标签（如 git tag v1.0.0 && git push origin v1.0.0），
+#   2. 自动：推送到 main 分支（产物在 Actions 的 Artifacts 里下载）
+#   3. 自动：推送 v 开头的标签（如 git tag v1.0.0 && git push origin v1.0.0），
 #      构建完成后自动创建 GitHub Release 并附上 exe
 #
-# 产物：video-device-cloud 便携版单文件 exe
-#   release/视频设备云数据服务系统-V<版本>-便携版.exe
-#   双击即可运行，无需安装；文件属性中的「文件说明 / 产品名称 / 公司名称 / 版本」均来自 package.json 与 electron-builder.yml
+# 产物：release/视频设备云数据服务系统-V<version>-便携版.exe
+#   双击即可运行，无需安装；文件属性中的「文件说明 / 产品名称 / 公司名称 / 版本」
+#   来自 desktop/package.json 与 electron-builder.yml
 
 name: Build Windows EXE
 
 on:
   workflow_dispatch: {} # 手动触发
   push:
-    branches: [main] # 推送到 main 自动构建（产物在 Actions 的 Artifacts 里下载）
+    branches: [main]
     tags:
-      - 'v*' # 打 tag 时额外创建 Release 并附上 exe
+      - 'v*'
 
 permissions:
   contents: write # 打 tag 时创建 Release 需要
@@ -29,6 +35,12 @@ jobs:
   build-win:
     runs-on: windows-latest
     timeout-minutes: 40
+
+    env:
+      # 从 npmmirror 拉取 Electron 运行时与 electron-builder 的二进制依赖
+      ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
+      ELECTRON_BUILDER_BINARIES_MIRROR: https://npmmirror.com/mirrors/electron-builder-binaries/
+
     steps:
       - name: 检出代码
         uses: actions/checkout@v4
@@ -44,14 +56,15 @@ jobs:
           node-version: 20
           cache: pnpm
 
-      # 缓存 Electron / electron-builder 二进制，二次构建提速约 3-5 分钟
+      # 缓存 Electron / electron-builder 下载的二进制，二次构建提速约 3-5 分钟
       - name: 缓存 Electron 二进制
         uses: actions/cache@v4
         with:
           path: |
             ~\AppData\Local\electron\Cache
             ~\AppData\Local\electron-builder\Cache
-          key: electron-win-${{ hashFiles('package.json') }}
+            ~\AppData\Local\npm-cache\_npx
+          key: electron-win-${{ hashFiles('desktop/package.json', 'electron-builder.yml') }}
           restore-keys: electron-win-
 
       - name: 安装依赖
@@ -64,22 +77,39 @@ jobs:
       - name: 构建前端产物
         run: pnpm build
 
+      - name: 解析 Electron 版本
+        shell: pwsh
+        run: |
+          $version = (npm view electron version).Trim()
+          if (-not $version) { Write-Error "未能获取 Electron 版本"; exit 1 }
+          "ELECTRON_VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          Write-Host "将使用 Electron $version 打包"
+
       - name: 打包 Windows 便携版单文件 exe
-        run: pnpm exec electron-builder --win --x64 --publish never
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: pwsh
+        run: |
+          npx --yes electron-builder@latest --win portable --x64 --config electron-builder.yml -c.electronVersion=$env:ELECTRON_VERSION
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: 列出产物
         shell: pwsh
         run: Get-ChildItem release -Filter *.exe | Select-Object Name, @{n='SizeMB';e={[math]::Round($_.Length/1MB,1)}}
 
-      # 关键校验：确认前端产物确实被打进应用包，避免出现"双击无反应"（界面资源缺失导致加载失败）
-      - name: 校验包内前端资源
+      # 关键校验：确认桌面端主进程与前端页面确实被打进产物，
+      # 避免出现"双击闪退 / 双击无反应"（应用包结构或界面资源缺失导致）
+      - name: 校验包内结构
         shell: pwsh
         run: |
+          $renderer = "release/win-unpacked/resources/renderer/index.html"
+          if (-not (Test-Path $renderer)) { Write-Error "缺少前端产物：$renderer"; exit 1 }
+
+          $assets = Get-ChildItem "release/win-unpacked/resources/renderer/assets" -Filter *.js -ErrorAction SilentlyContinue
+          if (-not $assets) { Write-Error "前端产物 assets 目录为空"; exit 1 }
+
           $asar = "release/win-unpacked/resources/app.asar"
           if (-not (Test-Path $asar)) { Write-Error "未找到 $asar，打包结构异常"; exit 1 }
-          node -e "const fs=require('fs');const s=fs.readFileSync(process.argv[1]).toString('latin1');const need=['index.html','electron','main.js'];const miss=need.filter(k=>!s.includes(k));console.log(miss.length?('缺少: '+miss.join(',')):'校验通过：app.asar 已包含前端页面与 Electron 主进程');process.exit(miss.length?1:0)" "$asar"
+
+          node -e "const fs=require('fs');const s=fs.readFileSync(process.argv[1]).toString('latin1');const need=['main.cjs','package.json'];const miss=need.filter(k=>!s.includes(k));console.log(miss.length?('缺少: '+miss.join(',')):'校验通过：app.asar 含桌面端主进程，resources/renderer 含前端页面');process.exit(miss.length?1:0)" "$asar"
 
       - name: 上传构建产物
         uses: actions/upload-artifact@v4

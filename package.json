@@ -7,15 +7,12 @@
     "name": "云视科技有限公司",
     "email": "support@videocloud.com"
   },
-  "main": "electron/main.js",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview --port 4173",
     "typecheck": "vue-tsc --noEmit",
-    "electron:dev": "concurrently -k \"pnpm dev\" \"wait-on tcp:127.0.0.1:5173 && cross-env VITE_DEV_SERVER_URL=http://127.0.0.1:5173 electron .\"",
-    "electron:start": "vite build && electron .",
-    "pack:win": "vite build && electron-builder --win --x64"
+    "pack:win": "vite build && node scripts/pack-win.mjs"
   },
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.1",
@@ -36,14 +33,9 @@
     "@types/lodash-es": "^4.17.12",
     "@types/node": "^22.7.4",
     "@vitejs/plugin-vue": "^5.1.4",
-    "concurrently": "^9.0.1",
-    "cross-env": "^7.0.3",
-    "electron": "^32.2.0",
-    "electron-builder": "^25.1.8",
     "sass": "^1.79.4",
     "typescript": "^5.6.2",
     "vite": "^5.4.8",
-    "vue-tsc": "^2.1.6",
-    "wait-on": "^8.0.1"
+    "vue-tsc": "^2.1.6"
   }
 }
