@@ -88,8 +88,35 @@ jobs:
       - name: 打包 Windows 便携版单文件 exe
         shell: pwsh
         run: |
-          npx --yes electron-builder@latest --win portable --x64 --config electron-builder.yml -c.electronVersion=$env:ELECTRON_VERSION
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          # electron-builder 不装进项目依赖，用 npx 按需拉取；
+          # 输出同时落盘到 build-pack.log，失败时随 Artifacts 一起上传便于定位问题。
+          $common = @('--win', 'portable', '--x64', '--config', 'electron-builder.yml', '--publish', 'never', "-c.electronVersion=$env:ELECTRON_VERSION")
+
+          Write-Host ">>> 使用 electron-builder@latest 打包（Electron $env:ELECTRON_VERSION）"
+          npx --yes electron-builder@latest @common 2>&1 | Tee-Object -FilePath build-pack.log
+          $code = $LASTEXITCODE
+
+          if ($code -ne 0) {
+            Write-Warning "electron-builder@latest 打包失败（退出码 $code），改用本仓库已验证过的 25.1.8 重试一下"
+            npx --yes electron-builder@25.1.8 @common 2>&1 | Tee-Object -FilePath build-pack-retry.log
+            $code = $LASTEXITCODE
+          }
+
+          if ($code -ne 0) {
+            Write-Host "::error::electron-builder 打包失败，退出码 $code，请查看 build-pack-log 产物"
+            exit $code
+          }
+
+      - name: 上传打包日志（便于排查失败）
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-pack-log
+          path: |
+            build-pack.log
+            build-pack-retry.log
+          if-no-files-found: ignore
+          retention-days: 7
 
       - name: 列出产物
         shell: pwsh
