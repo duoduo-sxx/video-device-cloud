@@ -27,9 +27,44 @@ const PREFERRED_PORT = Number(process.env.VC_PORT) || 41789
 
 let serverHandle = null
 let mainWindow = null
-let logFile = null
 
 /* ------------------------------- 日志 ------------------------------- */
+
+let logFiles = null
+
+/**
+ * 日志同时写两处，便于用户就近查看：
+ *   1. 用户数据目录（%APPDATA%/<应用名>/logs/main.log）
+ *   2. 便携版 exe 所在目录（启动日志.log）——便于"双击没反应/闪退"时直接找到原因
+ */
+function resolveLogFiles() {
+  if (logFiles) return logFiles
+
+  const targets = []
+  try {
+    targets.push(path.join(app.getPath('userData'), 'logs', 'main.log'))
+  } catch {
+    /* ignore */
+  }
+  // 便携版由 electron-builder 注入 PORTABLE_EXECUTABLE_DIR；其余场景用 exe 所在目录
+  const exeDir = process.env.PORTABLE_EXECUTABLE_DIR || path.dirname(process.execPath)
+  if (exeDir) targets.push(path.join(exeDir, '启动日志.log'))
+
+  logFiles = targets.filter((file) => {
+    try {
+      fs.mkdirSync(path.dirname(file), { recursive: true })
+      return true
+    } catch {
+      return false
+    }
+  })
+  return logFiles
+}
+
+function logPathText() {
+  const files = resolveLogFiles()
+  return files.length ? files.join('\n') : '(无可用日志路径)'
+}
 
 function log(...args) {
   const line = `[${new Date().toISOString()}] ${args
@@ -37,15 +72,12 @@ function log(...args) {
     .join(' ')}`
   // eslint-disable-next-line no-console
   console.log(line)
-  try {
-    if (!logFile) {
-      const dir = path.join(app.getPath('userData'), 'logs')
-      fs.mkdirSync(dir, { recursive: true })
-      logFile = path.join(dir, 'main.log')
+  for (const file of resolveLogFiles()) {
+    try {
+      fs.appendFileSync(file, `${line}\n`)
+    } catch {
+      /* 某个日志文件写不进去不影响运行 */
     }
-    fs.appendFileSync(logFile, `${line}\n`)
-  } catch {
-    /* 日志写入失败不影响程序运行 */
   }
 }
 
@@ -53,7 +85,7 @@ function log(...args) {
 function fatal(title, detail) {
   log(`[FATAL] ${title} :: ${detail}`)
   try {
-    dialog.showErrorBox(title, `${detail}${logFile ? `\n\n日志文件：${logFile}` : ''}`)
+    dialog.showErrorBox(title, `${detail}\n\n日志文件：\n${logPathText()}`)
   } catch {
     /* ignore */
   }
@@ -156,7 +188,7 @@ function buildMenu() {
               detail:
                 `版本 ${app.getVersion()}\n` +
                 `运行环境 Electron ${process.versions.electron} · Chromium ${process.versions.chrome}\n` +
-                `日志目录：${path.join(app.getPath('userData'), 'logs')}`
+                `日志文件：\n${logPathText()}`
             })
           }
         }
