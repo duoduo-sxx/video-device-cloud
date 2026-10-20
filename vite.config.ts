@@ -1,32 +1,36 @@
-import { defineConfig } from 'vite'
-import vue from '@vitejs/plugin-vue'
-import { fileURLToPath, URL } from 'node:url'
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const rootDir = path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
   base: './',
-  plugins: [vue()],
+  plugins: [react()],
   resolve: {
     alias: {
-      '@': fileURLToPath(new URL('./src', import.meta.url))
-    }
-  },
-  server: {
-    port: 5173,
-    host: '127.0.0.1',
-    open: false
+      '@': path.resolve(rootDir, 'src'),
+    },
   },
   build: {
+    target: 'es2020',
     outDir: 'dist',
     assetsDir: 'assets',
-    chunkSizeWarningLimit: 3000,
+    sourcemap: false,
+    chunkSizeWarningLimit: 1400,
     rollupOptions: {
       output: {
         manualChunks: {
-          echarts: ['echarts', 'vue-echarts'],
-          element: ['element-plus', '@element-plus/icons-vue'],
-          vendor: ['vue', 'vue-router', 'pinia', 'axios', 'dayjs']
-        }
-      }
-    }
-  }
-})
+          react: ['react', 'react-dom', 'react-router-dom'],
+          antd: ['antd', '@ant-design/icons'],
+          echarts: ['echarts', 'echarts-for-react'],
+        },
+      },
+    },
+  },
+  server: {
+    port: 5173,
+    open: true,
+  },
+});

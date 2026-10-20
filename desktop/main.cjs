@@ -1,17 +1,17 @@
 /**
- * 视频设备云数据服务系统 · 桌面端主进程
+ * NexusPlay 游戏开发管理平台 · 桌面端主进程
  * ---------------------------------------------------------------------------
  * 启动流程：在 127.0.0.1 上起一个只读本地静态服务，把 Vite 构建出的前端产物
  * （打包后位于 resources/renderer）通过 http:// 提供给渲染进程。
  *
  * 为什么用本地 http 而不是 file://：
- *   1. file:// 下浏览器对 localStorage / ES Module 的限制较多，且绝对资源路径
+ *   1. file:// 下浏览器对 localStorage / ES Module 的限制较多，且相对资源路径
  *      容易失效，容易出现白屏或本地数据无法持久化；
  *   2. 固定端口可以让页面 origin 保持稳定，用户使用过程中的数据改动在下次打开
  *      时仍然存在。
  *
- * 说明：本进程不访问任何外部接口，前端所有业务数据均来自内置数据服务。
- * 日志位置：%APPDATA%/<应用名>/logs/main.log
+ * 说明：本进程不访问任何外部接口，前端所有业务数据均来自内置模拟数据服务。
+ * 日志位置：%APPDATA%/<应用名>/logs/main.log，便携版 exe 同级目录另有一份「启动日志.log」
  */
 
 const { app, BrowserWindow, Menu, dialog, shell } = require('electron')
@@ -20,10 +20,10 @@ const path = require('node:path')
 
 const { startRendererServer } = require('./renderer-server.cjs')
 
-const APP_TITLE = '视频设备云数据服务系统'
-const APP_ID = 'com.yunshi.videocloud.dataservice'
+const APP_TITLE = '跨平台网页游戏综合开发管理系统'
+const APP_ID = 'com.nexusplay.console'
 /** 固定首选端口，保证页面 origin 稳定；被占用时自动退回随机端口 */
-const PREFERRED_PORT = Number(process.env.VC_PORT) || 41789
+const PREFERRED_PORT = Number(process.env.NP_PORT) || 41790
 
 let serverHandle = null
 let mainWindow = null
@@ -96,13 +96,13 @@ function fatal(title, detail) {
 
 function createWindow(rendererUrl) {
   mainWindow = new BrowserWindow({
-    width: 1440,
-    height: 900,
+    width: 1520,
+    height: 940,
     minWidth: 1280,
     minHeight: 800,
     show: true, // 立即显示：避免渲染异常时窗口永不出现
     autoHideMenuBar: true,
-    backgroundColor: '#0b2545',
+    backgroundColor: '#f5f6f8', // 与浅色主题底色一致，避免启动瞬间白闪
     title: APP_TITLE,
     webPreferences: {
       contextIsolation: true,
@@ -213,9 +213,9 @@ async function boot() {
 
 /* ------------------------------- 生命周期 ------------------------------- */
 
-// 说明：这里不使用单实例锁。早前版本用 requestSingleInstanceLock 时，一旦锁未拿到
-// （残留锁文件、同一台机器上曾异常退出等）就会在 whenReady 之后先建窗口再退出，
-// 表现为「窗口一闪就没了」。本应用允许多开，多个实例会自动使用不同端口。
+// 说明：这里不使用单实例锁。一旦锁未拿到（残留锁文件、同机曾异常退出等）就会在
+// whenReady 之后先建窗口再退出，表现为「窗口一闪就没了」。本应用允许多开，
+// 多个实例会自动使用不同端口。
 app.setAppUserModelId(APP_ID)
 
 process.on('uncaughtException', (error) => log('[uncaughtException]', error))

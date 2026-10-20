@@ -7,11 +7,11 @@
 #
 # 触发方式（三选一）：
 #   1. 手动：仓库 Actions 页 → Build Windows EXE → Run workflow
-#   2. 自动：推送到 main 分支（产物在 Actions 的 Artifacts 里下载）
+#   2. 自动：推送到 nexusplay-console 分支（产物在 Actions 的 Artifacts 里下载）
 #   3. 自动：推送 v 开头的标签（如 git tag v1.0.0 && git push origin v1.0.0），
 #      构建完成后自动创建 GitHub Release 并附上 exe
 #
-# 产物：release/视频设备云数据服务系统-V<version>-便携版.exe
+# 产物：release/NexusPlay 游戏开发管理平台-V<version>-便携版.exe
 #   双击即可运行，无需安装；文件属性中的「文件说明 / 产品名称 / 公司名称 / 版本」
 #   来自 desktop/package.json 与 electron-builder.yml
 
@@ -20,7 +20,7 @@ name: Build Windows EXE
 on:
   workflow_dispatch: {} # 手动触发
   push:
-    branches: [main]
+    branches: [nexusplay-console]
     tags:
       - 'v*'
 
@@ -39,22 +39,18 @@ jobs:
     env:
       # 从 npmmirror 拉取 Electron 运行时与 electron-builder 的二进制依赖
       ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
+      NPM_CONFIG_ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
       ELECTRON_BUILDER_BINARIES_MIRROR: https://npmmirror.com/mirrors/electron-builder-binaries/
 
     steps:
       - name: 检出代码
         uses: actions/checkout@v4
 
-      - name: 安装 pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 8 # 与仓库 pnpm-lock.yaml（lockfileVersion 6.0）保持一致
-
       - name: 配置 Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: pnpm
+          cache: npm
 
       # 缓存 Electron / electron-builder 下载的二进制，二次构建提速约 3-5 分钟
       - name: 缓存 Electron 二进制
@@ -64,41 +60,38 @@ jobs:
             ~\AppData\Local\electron\Cache
             ~\AppData\Local\electron-builder\Cache
             ~\AppData\Local\npm-cache\_npx
-          key: electron-win-${{ hashFiles('desktop/package.json', 'electron-builder.yml') }}
+          key: electron-win-${{ hashFiles('desktop/package.json', 'electron-builder.yml', 'package.json') }}
           restore-keys: electron-win-
 
       - name: 安装依赖
-        # --no-frozen-lockfile：允许 lockfile 与 package.json 有差异时自动补齐
-        run: pnpm install --no-frozen-lockfile
-
-      - name: 类型检查
-        run: pnpm typecheck
+        run: npm install --no-audit --no-fund
 
       - name: 构建前端产物
-        run: pnpm build
+        run: npm run build
 
       - name: 解析 Electron 版本
+        id: electron_version
         shell: pwsh
         run: |
-          $version = (npm view electron version).Trim()
-          if (-not $version) { Write-Error "未能获取 Electron 版本"; exit 1 }
-          "ELECTRON_VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
-          Write-Host "将使用 Electron $version 打包"
+          $version = (npm view electron version | Out-String).Trim()
+          if (-not $version) { Write-Error "获取 Electron 版本失败，请检查网络"; exit 1 }
+          if ($env:ELECTRON_VERSION) { $version = $env:ELECTRON_VERSION }
+          "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          Write-Host "Electron 版本: $version"
 
       - name: 打包 Windows 便携版单文件 exe
         shell: pwsh
         run: |
-          # electron-builder 不装进项目依赖，用 npx 按需拉取；
-          # 输出同时落盘到 build-pack.log，失败时随 Artifacts 一起上传便于定位问题。
-          $common = @('--win', 'portable', '--x64', '--config', 'electron-builder.yml', '--publish', 'never', "-c.electronVersion=$env:ELECTRON_VERSION")
-
-          Write-Host ">>> 使用 electron-builder@latest 打包（Electron $env:ELECTRON_VERSION）"
-          npx --yes electron-builder@latest @common 2>&1 | Tee-Object -FilePath build-pack.log
+          $ev = "${{ steps.electron_version.outputs.version }}"
+          $builder = @('--yes','electron-builder@latest','--win','portable','--x64','--config','electron-builder.yml',"-c.electronVersion=$ev",'-c.directories.output=release')
+          npx @builder 2>&1 | Tee-Object -FilePath build-pack.log
           $code = $LASTEXITCODE
 
           if ($code -ne 0) {
-            Write-Warning "electron-builder@latest 打包失败（退出码 $code），改用本仓库已验证过的 25.1.8 重试一下"
-            npx --yes electron-builder@25.1.8 @common 2>&1 | Tee-Object -FilePath build-pack-retry.log
+            $out = "release-retry-$env:GITHUB_RUN_ATTEMPT"
+            Write-Host "::warning::首次打包失败（退出码 $code），换输出目录 $out 重试"
+            $retry = @('--yes','electron-builder@latest','--win','portable','--x64','--config','electron-builder.yml',"-c.electronVersion=$ev","-c.directories.output=$out")
+            npx @retry 2>&1 | Tee-Object -FilePath build-pack-retry.log
             $code = $LASTEXITCODE
           }
 
@@ -120,20 +113,26 @@ jobs:
 
       - name: 列出产物
         shell: pwsh
-        run: Get-ChildItem release -Filter *.exe | Select-Object Name, @{n='SizeMB';e={[math]::Round($_.Length/1MB,1)}}
+        run: |
+          Get-ChildItem -Path release*,* -Filter *.exe -Recurse -Depth 1 -ErrorAction SilentlyContinue |
+            Select-Object Name, @{n='SizeMB';e={[math]::Round($_.Length/1MB,1)}}
 
       # 关键校验：确认桌面端主进程与前端页面确实被打进产物，
       # 避免出现"双击闪退 / 双击无反应"（应用包结构或界面资源缺失导致）
       - name: 校验包内结构
         shell: pwsh
         run: |
-          $renderer = "release/win-unpacked/resources/renderer/index.html"
+          $unpacked = Get-ChildItem -Path . -Filter win-unpacked -Directory -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+          if (-not $unpacked) { Write-Error "未找到 win-unpacked 目录，打包结构异常"; exit 1 }
+          Write-Host "校验目录：$($unpacked.FullName)"
+
+          $renderer = Join-Path $unpacked.FullName "resources/renderer/index.html"
           if (-not (Test-Path $renderer)) { Write-Error "缺少前端产物：$renderer"; exit 1 }
 
-          $assets = Get-ChildItem "release/win-unpacked/resources/renderer/assets" -Filter *.js -ErrorAction SilentlyContinue
+          $assets = Get-ChildItem (Join-Path $unpacked.FullName "resources/renderer/assets") -Filter *.js -ErrorAction SilentlyContinue
           if (-not $assets) { Write-Error "前端产物 assets 目录为空"; exit 1 }
 
-          $asar = "release/win-unpacked/resources/app.asar"
+          $asar = Join-Path $unpacked.FullName "resources/app.asar"
           if (-not (Test-Path $asar)) { Write-Error "未找到 $asar，打包结构异常"; exit 1 }
 
           node -e "const fs=require('fs');const s=fs.readFileSync(process.argv[1]).toString('latin1');const need=['main.cjs','package.json'];const miss=need.filter(k=>!s.includes(k));console.log(miss.length?('缺少: '+miss.join(',')):'校验通过：app.asar 含桌面端主进程，resources/renderer 含前端页面');process.exit(miss.length?1:0)" "$asar"
@@ -141,8 +140,10 @@ jobs:
       - name: 上传构建产物
         uses: actions/upload-artifact@v4
         with:
-          name: video-device-cloud-windows-exe
-          path: release/*.exe
+          name: nexusplay-console-windows-exe
+          path: |
+            release/*.exe
+            release-retry-*/*.exe
           if-no-files-found: error
           retention-days: 30
 
@@ -150,5 +151,7 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: release/*.exe
+          files: |
+            release/*.exe
+            release-retry-*/*.exe
           generate_release_notes: true

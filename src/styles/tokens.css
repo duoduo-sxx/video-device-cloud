@@ -1,0 +1,86 @@
+:root {
+  --np-primary-50: #eef1ff;
+  --np-primary-100: #dde3ff;
+  --np-primary-200: #c0caff;
+  --np-primary-400: #7b8af8;
+  --np-primary-500: #4b5bf5;
+  --np-primary-600: #3a48d9;
+  --np-primary-700: #2c38b0;
+
+  --np-success: #17b26a;
+  --np-success-bg: #e9f8f1;
+  --np-warning: #f79009;
+  --np-warning-bg: #fef4e6;
+  --np-danger: #f04438;
+  --np-danger-bg: #feeceb;
+  --np-info: #0ba5ec;
+  --np-info-bg: #e8f6fd;
+  --np-purple: #7a5af8;
+  --np-purple-bg: #f1ecfe;
+
+  --np-bg-body: #f7f8fa;
+  --np-bg-surface: #ffffff;
+  --np-bg-subtle: #f2f4f7;
+  --np-bg-hover: #f5f7fa;
+  --np-bg-sunken: #eff1f5;
+  --np-border: #e7eaf0;
+  --np-border-strong: #d5dae3;
+
+  --np-text-primary: #101828;
+  --np-text-secondary: #475467;
+  --np-text-tertiary: #8a94a6;
+  --np-text-disabled: #b4bcc9;
+
+  --np-radius-sm: 6px;
+  --np-radius: 8px;
+  --np-radius-lg: 12px;
+  --np-radius-xl: 16px;
+
+  --np-shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.05);
+  --np-shadow-md: 0 4px 12px rgba(16, 24, 40, 0.08);
+  --np-shadow-lg: 0 12px 32px rgba(16, 24, 40, 0.12);
+
+  --np-sidebar-width: 232px;
+  --np-sidebar-collapsed: 64px;
+  --np-topbar-height: 56px;
+
+  --np-chart-grid: #eef0f4;
+  --np-mask: rgba(16, 24, 40, 0.32);
+}
+
+[data-theme='dark'] {
+  --np-primary-50: #1b1f3a;
+  --np-primary-100: #232a52;
+  --np-primary-200: #2f386e;
+  --np-primary-400: #7b8af8;
+  --np-primary-500: #6c7bff;
+  --np-primary-600: #8b97ff;
+  --np-primary-700: #a8b2ff;
+
+  --np-success: #32d583;
+  --np-success-bg: #10281c;
+  --np-warning: #fdb022;
+  --np-warning-bg: #2b1f0a;
+  --np-danger: #f97066;
+  --np-danger-bg: #2d1514;
+  --np-info: #36bffa;
+  --np-info-bg: #0a2230;
+  --np-purple: #9b8afb;
+  --np-purple-bg: #1f1633;
+
+  --np-bg-body: #0d1117;
+  --np-bg-surface: #161b22;
+  --np-bg-subtle: #1c232c;
+  --np-bg-hover: #212934;
+  --np-bg-sunken: #0f141a;
+  --np-border: #2a313c;
+  --np-border-strong: #3a424f;
+
+  --np-text-primary: #e6eaf0;
+  --np-text-secondary: #a7b0be;
+  --np-text-tertiary: #6e7887;
+  --np-text-disabled: #4a535f;
+
+  --np-chart-grid: #222a35;
+  --np-mask: rgba(0, 0, 0, 0.55);
+}

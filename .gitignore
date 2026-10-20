@@ -1,9 +1,11 @@
 node_modules
 dist
 release
+release-retry-*
 .DS_Store
 *.log
 .vite
 .idea
 .vscode/*
 !.vscode/extensions.json
+build-pack*.log

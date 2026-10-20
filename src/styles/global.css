@@ -1,0 +1,228 @@
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--np-bg-body);
+  color: var(--np-text-primary);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+    'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Arial, sans-serif;
+  font-size: 13px;
+  line-height: 1.6;
+  font-feature-settings: 'tnum' on, 'lnum' on;
+  -webkit-font-smoothing: antialiased;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+h1,
+h2,
+h3,
+h4,
+p {
+  margin: 0;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--np-border-strong);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--np-text-tertiary);
+}
+
+/* ---------- Ant Design overrides ---------- */
+.ant-table-wrapper .ant-table {
+  background: transparent;
+  font-size: 13px;
+}
+
+.ant-table-wrapper .ant-table-thead > tr > th {
+  background: var(--np-bg-subtle) !important;
+  color: var(--np-text-secondary) !important;
+  font-size: 12px;
+  font-weight: 500;
+  border-bottom: 1px solid var(--np-border) !important;
+  padding: 10px 12px !important;
+  white-space: nowrap;
+}
+
+.ant-table-wrapper .ant-table-thead > tr > th::before {
+  display: none !important;
+}
+
+.ant-table-wrapper .ant-table-tbody > tr > td {
+  padding: 11px 12px !important;
+  border-bottom: 1px solid var(--np-border) !important;
+  color: var(--np-text-primary);
+}
+
+.ant-table-wrapper .ant-table-tbody > tr.ant-table-row:hover > td {
+  background: var(--np-bg-hover) !important;
+}
+
+.ant-table-wrapper .ant-table-tbody > tr.ant-table-row-selected > td {
+  background: var(--np-primary-50) !important;
+}
+
+.ant-table-wrapper .ant-table-placeholder:hover > td {
+  background: transparent !important;
+}
+
+.ant-pagination {
+  font-size: 13px;
+}
+
+.ant-tabs .ant-tabs-tab {
+  font-size: 13px;
+  padding: 10px 0;
+}
+
+.ant-tabs-top > .ant-tabs-nav::before {
+  border-bottom: 1px solid var(--np-border);
+}
+
+.ant-drawer .ant-drawer-header {
+  border-bottom: 1px solid var(--np-border);
+  padding: 16px 20px;
+}
+
+.ant-drawer .ant-drawer-body {
+  padding: 20px;
+}
+
+.ant-modal .ant-modal-content {
+  border-radius: 12px;
+  padding: 0;
+  overflow: hidden;
+}
+
+.ant-modal .ant-modal-header {
+  padding: 18px 24px 0;
+  margin-bottom: 16px;
+}
+
+.ant-modal .ant-modal-body {
+  padding: 0 24px;
+}
+
+.ant-modal .ant-modal-footer {
+  padding: 16px 24px 20px;
+  margin-top: 20px;
+  border-top: 1px solid var(--np-border);
+}
+
+.ant-btn {
+  font-size: 13px;
+  box-shadow: none !important;
+}
+
+.ant-btn-primary {
+  box-shadow: none !important;
+}
+
+.ant-select-selection-item,
+.ant-input,
+.ant-picker-input > input {
+  font-size: 13px;
+}
+
+.ant-form-item-label > label {
+  font-size: 13px;
+  color: var(--np-text-secondary);
+}
+
+.ant-card {
+  box-shadow: none;
+}
+
+.ant-tooltip .ant-tooltip-inner {
+  font-size: 12px;
+}
+
+.ant-dropdown .ant-dropdown-menu {
+  padding: 4px;
+}
+
+.ant-dropdown .ant-dropdown-menu-item {
+  font-size: 13px;
+  border-radius: 6px;
+  padding: 6px 10px !important;
+}
+
+.ant-segmented-item-label {
+  font-size: 12px;
+  padding: 0 10px;
+}
+
+/* ---------- utilities ---------- */
+.np-num {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+.np-mono {
+  font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 12px;
+}
+
+.np-muted {
+  color: var(--np-text-tertiary);
+}
+
+.np-secondary {
+  color: var(--np-text-secondary);
+}
+
+.np-truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.np-scroll-y {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.np-fade-in {
+  animation: npFadeIn 0.24s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes npFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}

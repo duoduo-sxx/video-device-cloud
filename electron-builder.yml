@@ -4,12 +4,12 @@
 #   npx --yes electron-builder@latest --win portable --x64 --config electron-builder.yml -c.electronVersion=<版本>
 # 本地 Windows 一键打包见根目录 pack-win.bat；云端打包见 .github/workflows/build-windows.yml
 #
-# 产物：release/视频设备云数据服务系统-V<version>-便携版.exe
+# 产物：release/NexusPlay 游戏开发管理平台-V<version>-便携版.exe
 #   免安装单文件，双击即可运行（首次启动会自解压到临时目录，通常 1~3 秒）
 
-appId: com.yunshi.videocloud.dataservice
-productName: 视频设备云数据服务系统
-copyright: Copyright © 2026 云视科技有限公司. All rights reserved.
+appId: com.nexusplay.console
+productName: NexusPlay 游戏开发管理平台
+copyright: Copyright © 2026 NexusPlay Studio. All rights reserved.
 
 directories:
   # 桌面端应用目录（独立 package.json + main.cjs），与 Web 工程依赖完全隔离
@@ -32,9 +32,9 @@ extraResources:
 win:
   icon: build/icon.ico
   # 可执行文件主体名使用 ASCII，避免个别安全软件/老旧环境下中文路径带来的问题
-  executableName: VideoDeviceCloud
+  executableName: NexusPlay
   # 文件属性中的「法律商标」字段
-  legalTrademarks: 视频设备云数据服务系统
+  legalTrademarks: NexusPlay
   target:
     - target: portable
       arch: [x64]
