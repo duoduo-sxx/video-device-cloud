@@ -1,0 +1,37 @@
+# 云枢平台 · electron-builder 配置（Windows 便携版）
+# 命令行示例（Windows CMD）：
+#   npx --yes electron-builder@latest --win portable --x64 ^
+#     --config electron-builder.yml ^
+#     -c.electronVersion=<Electron版本> ^
+#     -c.directories.output=<输出目录>
+# 说明：本项目不引入 electron 依赖，运行时版本由命令行 -c.electronVersion 指定，
+#       打包时 electron-builder 会按镜像（ELECTRON_MIRROR）自动下载对应运行时。
+
+appId: com.yunshu.platform
+productName: YunShuPlatform
+copyright: Copyright © 2026 云枢
+
+directories:
+  output: release
+  buildResources: build
+
+# 只打包运行所需内容；前端依赖已由 vite build 全部打进 dist/assets，
+# 显式排除 node_modules（electron-builder 默认会自动附加生产依赖，这里必须否定掉）
+files:
+  - electron/main.cjs
+  - dist/**/*
+  - package.json
+  - "!node_modules/**/*"
+
+# 前端依赖不参与 Node require 解析，全部排除可显著减小体积
+asar: true
+compression: maximum
+
+win:
+  target:
+    - target: portable
+      arch:
+        - x64
+
+portable:
+  artifactName: ${productName}-${version}-portable-${arch}.${ext}

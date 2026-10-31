@@ -1,0 +1,132 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --primary: #1d4ed8;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: #f5f7fa;
+  color: #101828;
+  font-feature-settings: 'tnum' 1;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* 所有数字使用等宽数字 */
+.num {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
+
+/* 滚动条 */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: #d0d5dd;
+  border-radius: 6px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #98a2b3;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* 深色侧栏滚动条 */
+.sidebar-scroll::-webkit-scrollbar-thumb {
+  background: #1f2b45;
+  background-clip: content-box;
+}
+
+@layer components {
+  .card {
+    @apply bg-white rounded-card border border-line shadow-card;
+  }
+  .card-pad {
+    @apply bg-white rounded-card border border-line shadow-card p-5;
+  }
+  .section-title {
+    @apply text-base font-semibold text-ink-1;
+  }
+  .muted {
+    @apply text-ink-2;
+  }
+  .faint {
+    @apply text-ink-3;
+  }
+  .divider {
+    @apply h-px w-full bg-line;
+  }
+  .link {
+    @apply text-primary hover:text-primary-hover cursor-pointer;
+  }
+  .table-base {
+    @apply w-full border-collapse text-sm;
+  }
+  .table-base thead th {
+    @apply bg-[#F9FAFB] text-left font-medium text-ink-2 whitespace-nowrap;
+  }
+  .table-base tbody td {
+    @apply border-t border-line text-ink-1;
+  }
+  .focus-ring {
+    @apply focus:outline-none focus:ring-2 focus:ring-primary-ring focus:border-primary;
+  }
+}
+
+/* 发票预览的联次色带 */
+.invoice-strip {
+  background: repeating-linear-gradient(
+    135deg,
+    #f2f5fa,
+    #f2f5fa 6px,
+    #e8eef8 6px,
+    #e8eef8 12px
+  );
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-fade-up {
+  animation: fadeUp 200ms ease-out both;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -400px 0;
+  }
+  100% {
+    background-position: 400px 0;
+  }
+}
+.skeleton {
+  background: linear-gradient(90deg, #eef1f5 25%, #f6f8fb 37%, #eef1f5 63%);
+  background-size: 800px 100%;
+  animation: shimmer 1.4s infinite linear;
+  border-radius: 6px;
+}

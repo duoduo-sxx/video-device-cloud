@@ -1,0 +1,51 @@
+name: Build Windows Portable
+
+# 推送到 yunshu-platform 分支时自动打包，也可在 Actions 页面手动触发
+on:
+  push:
+    branches: [yunshu-platform]
+  workflow_dispatch:
+
+jobs:
+  build-win-portable:
+    runs-on: windows-latest
+    env:
+      # 国内镜像（Runner 上无害，本地复用同一套配置时必需）
+      ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
+      NPM_CONFIG_ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
+      ELECTRON_BUILDER_BINARIES_MIRROR: https://npmmirror.com/mirrors/electron-builder-binaries/
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build web app (tsc + vite)
+        run: npm run build
+
+      - name: Resolve latest Electron version
+        id: electron
+        shell: bash
+        run: echo "version=$(npm view electron version)" >> "$GITHUB_OUTPUT"
+
+      - name: Package Windows portable (x64)
+        shell: bash
+        run: >
+          npx --yes electron-builder@latest --win portable --x64
+          --config electron-builder.yml
+          "-c.electronVersion=${{ steps.electron.outputs.version }}"
+          "-c.directories.output=release"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: YunShuPlatform-portable-win-x64
+          path: release/*.exe
+          if-no-files-found: error
