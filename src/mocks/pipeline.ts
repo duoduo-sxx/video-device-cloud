@@ -85,7 +85,7 @@ export const QUALITY_CHECKS: QualityCheck[] = [
     affectedRows: 38960,
     severity: 'medium',
     status: 'warning',
-    detail: '腾讯广告默认回传「支付」口径，与巨量「下单」口径差 3.5%，已按 1.035 系数折算，折算前后差额 12,480 单',
+    detail: '腾讯广告默认回传「支付」口径，与巨量「下单」口径差 3.5%，已按 1.035 系数折算，本月折算差额 36 单',
     checkedAt: '2026-10-31T09:06:18',
   },
   {

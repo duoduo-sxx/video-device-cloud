@@ -23,7 +23,7 @@ export default function Layers() {
     <>
       <PageHeader
         title="数仓分层"
-        desc="19 张表按 ODS → DWD → DWS → ADS 四层组织；上游改了字段下游会立刻报错，血缘关系让「这个指标从哪来」可被追溯"
+        desc={`${DATA_TABLES.length} 张表按 ODS → DWD → DWS → ADS 四层组织；上游改了字段下游会立刻报错，血缘关系让「这个指标从哪来」可被追溯`}
         breadcrumb="数据资产 / 数仓分层"
         actions={<Badge tone="blue">{DATA_TABLES.length} 张表 · 增量更新</Badge>}
       />

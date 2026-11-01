@@ -248,9 +248,9 @@ export const SUGGESTIONS: Suggestion[] = [
     title: '加购到下单环节是最大短板，建议大促开门红集中收割',
     target: '全平台落地页与优惠策略',
     accountId: 'ACC-101',
-    problem: '「加购 → 下单」转化率仅 11.5%，行业基准为 32%，说明用户已被种草但缺少立刻下单的理由（价格力/赠品/紧迫感）。',
+    problem: '「加购 → 下单」转化率仅 11.8%，行业基准为 32%，说明用户已被种草但缺少立刻下单的理由（价格力/赠品/紧迫感）。',
     evidence: [
-      { label: '加购 → 下单', value: '11.5%', compare: '行业 32%' },
+      { label: '加购 → 下单', value: '11.8%', compare: '行业 32%' },
       { label: '加购人数', value: '约 8.5 万', compare: '下单 9,750 单' },
       { label: '客单价', value: `¥${(T.gmv / T.paidOrders).toFixed(0)}`, compare: '双 11 预售价可下探 12%' },
     ],
@@ -420,7 +420,8 @@ export const RECONCILE: ReconcileRow[] = PLATFORMS.map((p, i) => {
   const diffFactor = [0.0006, 0.0031, -0.0012, 0.0008, 0.0024, 0.0018][i];
   const platformSpend = r2(m.spend * (1 + diffFactor));
   const ourConv = m.conversions;
-  const platformConv = Math.round(ourConv * (1 + (i === 1 ? 0.035 : 0.001 * (i - 2))));
+  // 腾讯回传「支付」口径，比「下单」少约 3.5%，因此平台后台转化数低于我方
+  const platformConv = i === 1 ? Math.round(ourConv / 1.035) : Math.round(ourConv * (1 + 0.001 * (i - 2)));
   const diff = platformSpend - m.spend;
   return {
     platform: p.code,

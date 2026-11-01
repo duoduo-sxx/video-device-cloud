@@ -22,7 +22,7 @@ import {
   totalMetrics,
 } from '@/mocks/daily';
 import { ANOMALIES, SUGGESTIONS } from '@/mocks/insights';
-import { SYNC_JOBS, QUALITY_CHECKS } from '@/mocks/pipeline';
+import { SYNC_JOBS, QUALITY_CHECKS, DATA_TABLES } from '@/mocks/pipeline';
 import { accountSummaries } from '@/mocks/daily';
 import { cpa, change, cpa as cpaOf, ctr, cvr, roi, r2 } from '@/lib/metrics';
 import { money, num, pct, wan } from '@/lib/format';
@@ -57,7 +57,7 @@ const qualityOk = QUALITY_CHECKS.filter((q) => q.status === 'passed').length;
 const STEPS = [
   { icon: Database, label: '数据接入', value: `${syncOk}/${SYNC_JOBS.length} 账户`, ok: syncOk === SYNC_JOBS.length, to: '/connect/sync' },
   { icon: Filter, label: '质量校验', value: `${qualityOk}/${QUALITY_CHECKS.length} 通过`, ok: qualityOk === QUALITY_CHECKS.length, to: '/connect/quality' },
-  { icon: Layers, label: '数仓加工', value: '19 张表', ok: true, to: '/data/layers' },
+  { icon: Layers, label: '数仓加工', value: `${DATA_TABLES.length} 张表`, ok: true, to: '/data/layers' },
   { icon: Users, label: '模型分析', value: '6 维洞察 / 5 模型归因', ok: true, to: '/insight/audience' },
   { icon: Sparkles, label: '优化建议', value: `${pendingSuggestions.length} 条待处理`, ok: pendingSuggestions.length === 0, to: '/optimize/suggestions' },
 ];
@@ -67,7 +67,7 @@ export default function Overview() {
     <>
       <PageHeader
         title="投放总览"
-        desc={`${BRAND.owner} · 6 个投放平台 12 个账户 · 数据截至 2026-10-31 08:12 · 与平台后台消耗差异 < 0.2%`}
+        desc={`${BRAND.owner} · 6 个投放平台 12 个账户 · 数据截至 2026-10-31 08:12 · 与平台后台消耗差异 ≤ 0.31%`}
         breadcrumb="2026-10 账期（对比 2026-09）"
         actions={
           <>
