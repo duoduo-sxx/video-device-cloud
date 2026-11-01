@@ -1,4 +1,4 @@
-# 云枢平台 · electron-builder 配置（Windows 便携版）
+# 投见 AdLens · electron-builder 配置（Windows 便携版）
 # 命令行示例（Windows CMD）：
 #   npx --yes electron-builder@latest --win portable --x64 ^
 #     --config electron-builder.yml ^
@@ -7,9 +7,9 @@
 # 说明：本项目不引入 electron 依赖，运行时版本由命令行 -c.electronVersion 指定，
 #       打包时 electron-builder 会按镜像（ELECTRON_MIRROR）自动下载对应运行时。
 
-appId: com.yunshu.platform
-productName: YunShuPlatform
-copyright: Copyright © 2026 云枢
+appId: com.adlens.platform
+productName: AdLens
+copyright: Copyright © 2026 AdLens
 
 directories:
   output: release

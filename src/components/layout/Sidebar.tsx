@@ -1,83 +1,91 @@
 import clsx from 'clsx';
 import { NavLink } from 'react-router-dom';
-import { Hexagon, PanelLeftClose, PanelLeft } from 'lucide-react';
+import { PanelLeft, PanelLeftClose, Radar } from 'lucide-react';
 import { useUIStore } from '@/store/uiStore';
-import { useAuthStore } from '@/store/authStore';
-import { ROLE_MAP, hasPerm } from '@/mocks/roles';
-import type { NavGroup } from './nav';
+import { useAppStore } from '@/store/appStore';
+import { ANOMALIES } from '@/mocks/insights';
+import { QUALITY_CHECKS } from '@/mocks/pipeline';
+import { BRAND, type NavGroup } from './nav';
 
-export default function Sidebar({ groups, scopeLabel }: { groups: NavGroup[]; scopeLabel: string }) {
+export default function Sidebar({ groups }: { groups: NavGroup[] }) {
   const collapsed = useUIStore((s) => s.collapsed);
   const toggle = useUIStore((s) => s.toggleCollapsed);
-  const user = useAuthStore((s) => s.user);
-  const perms = user ? ROLE_MAP[user.role]?.permissions ?? [] : [];
+  const pending = useAppStore((s) => s.suggestions.filter((x) => x.status === 'pending').length);
+
+  const badgeOf = (key?: string): number => {
+    if (key === 'pending') return pending;
+    if (key === 'anomaly') return ANOMALIES.filter((a) => a.level === 'high' && a.type !== 'quality').length;
+    if (key === 'quality') return QUALITY_CHECKS.filter((q) => q.status !== 'passed').length;
+    return 0;
+  };
 
   return (
     <aside
       className={clsx(
         'sidebar-scroll flex shrink-0 flex-col overflow-y-auto border-r border-[#111C33] bg-sidebar transition-all duration-200',
-        collapsed ? 'w-16' : 'w-60',
+        collapsed ? 'w-16' : 'w-[228px]',
       )}
     >
-      {/* Logo */}
       <div className={clsx('flex h-14 items-center border-b border-[#141F38]', collapsed ? 'justify-center' : 'px-4')}>
         <div className="flex items-center gap-2.5">
           <span className="flex h-7 w-7 items-center justify-center rounded-md bg-primary">
-            <Hexagon size={16} className="text-white" strokeWidth={2.4} />
+            <Radar size={16} className="text-white" strokeWidth={2.4} />
           </span>
           {!collapsed && (
             <div className="leading-tight">
-              <div className="text-[13px] font-semibold text-white">云枢 · 数据价值链</div>
-              <div className="mt-0.5 text-2xs text-sidebar-text">{scopeLabel}</div>
+              <div className="text-[13px] font-semibold text-white">
+                {BRAND.name} <span className="text-2xs font-normal text-[#7B8AA8]">{BRAND.en}</span>
+              </div>
+              <div className="mt-0.5 text-2xs text-sidebar-text">{BRAND.tagline}</div>
             </div>
           )}
         </div>
       </div>
 
       <nav className="flex-1 py-2">
-        {groups.map((g, gi) => {
-          const visible = g.items.filter((it) => hasPerm(perms, it.perm));
-          if (!visible.length) return null;
-          return (
-            <div key={gi} className={gi > 0 ? 'mt-3' : ''}>
-              {g.title && !collapsed && (
-                <div className="px-4 pb-1.5 pt-2 text-2xs font-medium tracking-wide text-[#5B6780]">
-                  {g.title}
-                </div>
-              )}
-              {g.title && collapsed && <div className="mx-3 my-1.5 h-px bg-[#141F38]" />}
-              {visible.map((it) => {
-                const Icon = it.icon;
-                return (
-                  <NavLink
-                    key={it.to}
-                    to={it.to}
-                    title={collapsed ? it.label : undefined}
-                    className={({ isActive }) =>
-                      clsx(
-                        'relative mx-2 flex items-center gap-2.5 rounded-md py-2 text-[13px] transition-colors',
-                        collapsed ? 'justify-center px-0' : 'px-2.5',
-                        isActive
-                          ? 'bg-primary/15 font-medium text-white'
-                          : 'text-sidebar-text hover:bg-sidebar-hover hover:text-white',
-                      )
-                    }
-                  >
-                    {({ isActive }) => (
-                      <>
-                        {isActive && (
-                          <span className="absolute left-0 top-1.5 h-[calc(100%-12px)] w-[3px] rounded-r bg-primary" />
-                        )}
-                        <Icon size={16} strokeWidth={1.9} className="shrink-0" />
-                        {!collapsed && <span className="truncate">{it.label}</span>}
-                      </>
-                    )}
-                  </NavLink>
-                );
-              })}
-            </div>
-          );
-        })}
+        {groups.map((g, gi) => (
+          <div key={gi} className={gi > 0 ? 'mt-2.5' : ''}>
+            {g.title && !collapsed && (
+              <div className="px-4 pb-1.5 pt-2 text-2xs font-medium tracking-wide text-[#5B6780]">{g.title}</div>
+            )}
+            {g.title && collapsed && <div className="mx-3 my-1.5 h-px bg-[#141F38]" />}
+            {g.items.map((it) => {
+              const Icon = it.icon;
+              const n = badgeOf(it.badgeKey);
+              return (
+                <NavLink
+                  key={it.to}
+                  to={it.to}
+                  title={collapsed ? it.label : undefined}
+                  className={({ isActive }) =>
+                    clsx(
+                      'relative mx-2 flex items-center gap-2.5 rounded-md py-2 text-[13px] transition-colors',
+                      collapsed ? 'justify-center px-0' : 'px-2.5',
+                      isActive
+                        ? 'bg-primary/15 font-medium text-white'
+                        : 'text-sidebar-text hover:bg-sidebar-hover hover:text-white',
+                    )
+                  }
+                >
+                  {({ isActive }) => (
+                    <>
+                      {isActive && (
+                        <span className="absolute left-0 top-1.5 h-[calc(100%-12px)] w-[3px] rounded-r bg-primary" />
+                      )}
+                      <Icon size={16} strokeWidth={1.9} className="shrink-0" />
+                      {!collapsed && <span className="truncate">{it.label}</span>}
+                      {!collapsed && n > 0 && (
+                        <span className="ml-auto rounded-full bg-danger/90 px-1.5 py-px text-[10px] font-medium text-white">
+                          {n}
+                        </span>
+                      )}
+                    </>
+                  )}
+                </NavLink>
+              );
+            })}
+          </div>
+        ))}
       </nav>
 
       <button

@@ -1,83 +1,72 @@
 import { create } from 'zustand';
-import type { Bill, ComputeInstance, Invoice, MatchPair } from '@/types';
-import { BILL_STATE } from '@/mocks/bills';
-import { INVOICE_STATE } from '@/mocks/invoices';
-import { INSTANCES } from '@/mocks/compute';
-import { MATCH_PAIRS } from '@/mocks/matches';
-import { TENANTS } from '@/mocks/tenants';
-import { round2 } from '@/lib/calc';
+import type { ChangeOrder, Suggestion, SuggestionStatus } from '@/types';
+import { CHANGE_ORDERS, SUGGESTIONS } from '@/mocks/insights';
 
 interface AppState {
-  bills: Bill[];
-  invoices: Invoice[];
-  instances: ComputeInstance[];
-  pairs: MatchPair[];
-  balance: number;
+  suggestions: Suggestion[];
+  changes: ChangeOrder[];
+  /** 预算模拟：planId → 调整后的日预算 */
+  draftBudgets: Record<string, number>;
 
-  confirmBill: (id: string) => void;
-  disputeBill: (id: string) => void;
-  applyInvoice: (inv: Invoice) => void;
-  issueInvoice: (id: string, invoiceNo: string) => void;
-  addInstance: (i: ComputeInstance) => void;
-  setInstanceStatus: (id: string, status: ComputeInstance['status']) => void;
-  reviewPair: (id: string, status: MatchPair['reviewStatus']) => void;
-  reviewPairs: (ids: string[], status: MatchPair['reviewStatus']) => void;
-  recharge: (amount: number) => void;
-  markSettled: (billId: string, paymentId: string) => void;
+  setSuggestionStatus: (id: string, status: SuggestionStatus) => void;
+  /** 采纳并下发：生成变更单，状态置为已下发 */
+  dispatch: (id: string, operator: string) => void;
+  ignore: (id: string) => void;
+  setDraftBudget: (planId: string, budget: number) => void;
+  resetDraftBudgets: () => void;
+  retryChange: (id: string) => void;
 }
 
-export const useAppStore = create<AppState>((set) => ({
-  bills: Object.values(BILL_STATE).map((b) => ({ ...b })),
-  invoices: Object.values(INVOICE_STATE).map((i) => ({ ...i })),
-  instances: INSTANCES.map((i) => ({ ...i })),
-  pairs: MATCH_PAIRS.map((p) => ({ ...p })),
-  balance: TENANTS[0].balance,
+export const useAppStore = create<AppState>((set, get) => ({
+  suggestions: SUGGESTIONS,
+  changes: CHANGE_ORDERS,
+  draftBudgets: {},
 
-  confirmBill: (id) =>
+  setSuggestionStatus: (id, status) =>
     set((s) => ({
-      bills: s.bills.map((b) =>
-        b.id === id ? { ...b, status: 'confirmed', confirmedAt: '2026-10-31T23:45:00' } : b,
-      ),
+      suggestions: s.suggestions.map((x) => (x.id === id ? { ...x, status } : x)),
     })),
 
-  disputeBill: (id) =>
+  dispatch: (id, operator) => {
+    const sg = get().suggestions.find((s) => s.id === id);
+    if (!sg) return;
+    const now = new Date('2026-10-31T10:00:00');
+    const order: ChangeOrder = {
+      id: `CH-20261031-${String(100 + get().changes.length + 1).slice(1)}`,
+      suggestionId: sg.id,
+      accountId: sg.accountId,
+      target: sg.target,
+      type: sg.type,
+      before: sg.evidence[0] ? `${sg.evidence[0].label}：${sg.evidence[0].value}` : '—',
+      after: sg.action,
+      status: 'dispatched',
+      createdAt: now.toISOString().slice(0, 19),
+      effectiveAt: null,
+      operator,
+    };
     set((s) => ({
-      bills: s.bills.map((b) => (b.id === id ? { ...b, status: 'disputed' } : b)),
+      changes: [order, ...s.changes],
+      suggestions: s.suggestions.map((x) => (x.id === id ? { ...x, status: 'dispatched' } : x)),
+    }));
+  },
+
+  ignore: (id) =>
+    set((s) => ({
+      suggestions: s.suggestions.map((x) => (x.id === id ? { ...x, status: 'ignored' } : x)),
     })),
 
-  applyInvoice: (inv) => set((s) => ({ invoices: [inv, ...s.invoices] })),
+  setDraftBudget: (planId, budget) =>
+    set((s) => ({ draftBudgets: { ...s.draftBudgets, [planId]: budget } })),
 
-  issueInvoice: (id, invoiceNo) =>
+  resetDraftBudgets: () => set({ draftBudgets: {} }),
+
+  retryChange: (id) =>
     set((s) => ({
-      invoices: s.invoices.map((i) =>
-        i.id === id ? { ...i, status: 'issued', invoiceNo, issuedAt: '2026-10-31T23:50:00' } : i,
-      ),
-      bills: s.bills.map((b) =>
-        s.invoices.find((i) => i.id === id)?.billIds.includes(b.id)
-          ? { ...b, status: 'invoiced', invoiceId: id }
-          : b,
-      ),
-    })),
-
-  addInstance: (i) => set((s) => ({ instances: [i, ...s.instances] })),
-
-  setInstanceStatus: (id, status) =>
-    set((s) => ({ instances: s.instances.map((i) => (i.id === id ? { ...i, status } : i)) })),
-
-  reviewPair: (id, status) =>
-    set((s) => ({ pairs: s.pairs.map((p) => (p.id === id ? { ...p, reviewStatus: status } : p)) })),
-
-  reviewPairs: (ids, status) =>
-    set((s) => ({
-      pairs: s.pairs.map((p) => (ids.includes(p.id) ? { ...p, reviewStatus: status } : p)),
-    })),
-
-  recharge: (amount) => set((s) => ({ balance: round2(s.balance + amount) })),
-
-  markSettled: (billId) =>
-    set((s) => ({
-      bills: s.bills.map((b) =>
-        b.id === billId ? { ...b, status: 'settled', paidAt: '2026-10-31T23:55:00' } : b,
+      changes: s.changes.map((c) =>
+        c.id === id ? { ...c, status: 'dispatched' } : c,
       ),
     })),
 }));
+
+export const usePendingCount = () =>
+  useAppStore((s) => s.suggestions.filter((x) => x.status === 'pending').length);

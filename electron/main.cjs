@@ -1,5 +1,5 @@
 /**
- * 云枢平台 · Electron 主进程（纯加载器，不含任何业务逻辑）
+ * 投见 AdLens · Electron 主进程（纯加载器，不含任何业务逻辑）
  *
  * 说明：
  * - 项目本身是纯前端（React + Vite 产物），此处仅负责打开一个窗口加载 dist/index.html
@@ -20,7 +20,7 @@ function createWindow() {
     minHeight: 720,
     autoHideMenuBar: true,
     backgroundColor: '#F5F7FA',
-    title: '云枢 · 大数据价值链服务平台',
+    title: '投见 AdLens · 跨平台广告数据分析平台',
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,

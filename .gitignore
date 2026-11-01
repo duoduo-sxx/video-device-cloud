@@ -4,6 +4,8 @@ node_modules/
 # 构建产物
 dist/
 dist-check/
+dist-build/
+scripts/out/
 release/
 release-*/
 

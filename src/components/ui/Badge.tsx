@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 
 type Tone = 'gray' | 'blue' | 'green' | 'amber' | 'red' | 'cyan' | 'purple';
 
-const TONES: Record<Tone, string> = {
+export const TONES: Record<Tone, string> = {
   gray: 'bg-[#F2F4F7] text-ink-2',
   blue: 'bg-primary-soft text-primary',
   green: 'bg-success-soft text-success',
@@ -38,90 +38,82 @@ export function Badge({
   );
 }
 
-/* 业务状态 → 色调映射 */
+/** 业务状态 → 色调 */
 export const STATUS_TONE: Record<string, Tone> = {
-  // 账单
-  draft: 'gray',
-  pending_confirm: 'amber',
-  confirmed: 'blue',
-  invoiced: 'purple',
-  settled: 'green',
-  disputed: 'red',
-  // 任务 / 实例 / 通用
-  running: 'blue',
+  // 账户
+  active: 'green',
+  paused: 'gray',
+  auth_expired: 'red',
+  balance_low: 'amber',
+  // 同步
   success: 'green',
+  running: 'blue',
   failed: 'red',
   waiting: 'gray',
-  stopped: 'gray',
-  creating: 'amber',
-  released: 'gray',
-  // 发票
+  // 计划
+  delivering: 'green',
+  limited: 'amber',
+  learn: 'cyan',
+  ended: 'gray',
+  // 质量
+  passed: 'green',
+  warning: 'amber',
+  // 建议
   pending: 'amber',
-  issued: 'purple',
-  sent: 'green',
-  void: 'gray',
-  // 客户 / 成员
-  active: 'green',
-  frozen: 'red',
-  trial: 'cyan',
-  disabled: 'gray',
-  connected: 'green',
-  error: 'red',
-  // 模型 / 服务
-  online: 'green',
-  offline: 'gray',
-  beta: 'amber',
-  // 工单
-  open: 'amber',
-  processing: 'blue',
-  resolved: 'green',
-  closed: 'gray',
-  // 合同
-  expiring: 'amber',
-  expired: 'red',
-  // 告警
-  firing: 'red',
-  // 审批
-  approved: 'green',
-  rejected: 'red',
+  adopted: 'blue',
+  dispatched: 'cyan',
+  ignored: 'gray',
+  // 变更单
+  pending_approval: 'amber',
+  effective: 'green',
+  // 归因/其他
+  matched: 'green',
+  diff: 'amber',
+  ready: 'green',
+  building: 'cyan',
+  used: 'blue',
+  // 风险
+  high: 'red',
+  medium: 'amber',
+  low: 'gray',
 };
 
 export const STATUS_TEXT: Record<string, string> = {
-  draft: '待出账',
-  pending_confirm: '待确认',
-  confirmed: '已确认',
-  invoiced: '已开票',
-  settled: '已回款',
-  disputed: '有异议',
-  running: '运行中',
+  // 账户
+  active: '投放中',
+  paused: '已暂停',
+  auth_expired: '授权过期',
+  balance_low: '余额预警',
+  // 同步
   success: '成功',
+  running: '同步中',
   failed: '失败',
   waiting: '排队中',
-  stopped: '已停止',
-  creating: '创建中',
-  released: '已释放',
+  // 计划
+  delivering: '投放中',
+  limited: '预算受限',
+  learn: '学习期',
+  ended: '已结束',
+  // 质量
+  passed: '通过',
+  warning: '警告',
+  // 建议
   pending: '待处理',
-  issued: '已开票',
-  sent: '已寄出',
-  void: '已作废',
-  active: '正常',
-  frozen: '冻结',
-  trial: '试用中',
-  disabled: '已停用',
-  connected: '已连接',
-  error: '异常',
-  online: '已上架',
-  offline: '已下架',
-  beta: '公测',
-  open: '待受理',
-  processing: '处理中',
-  resolved: '已解决',
-  closed: '已关闭',
-  expiring: '即将到期',
-  expired: '已到期',
-  firing: '告警中',
-  approved: '已通过',
-  rejected: '已驳回',
+  adopted: '已采纳',
+  dispatched: '已下发',
+  ignored: '已忽略',
+  // 变更单
+  pending_approval: '待审批',
+  effective: '已生效',
+  // 其他
+  matched: '一致',
+  diff: '有差异',
+  ready: '可用',
+  building: '构建中',
+  used: '使用中',
+  high: '高',
+  medium: '中',
+  low: '低',
 };
 
 export function StatusBadge({ status, label }: { status: string; label?: string }) {
@@ -133,12 +125,34 @@ export function StatusBadge({ status, label }: { status: string; label?: string 
   );
 }
 
-export function RiskBadge({ level }: { level: 'high' | 'medium' | 'low' }) {
-  const map = { high: ['red', '高风险'], medium: ['amber', '中风险'], low: ['green', '低风险'] } as const;
+/** 异常等级 */
+export function LevelBadge({ level }: { level: 'high' | 'medium' | 'low' }) {
+  const map = { high: ['red', '高优先级'], medium: ['amber', '中优先级'], low: ['gray', '低优先级'] } as const;
   return <Badge tone={map[level][0]}>{map[level][1]}</Badge>;
 }
 
-export function PriorityBadge({ level }: { level: 'high' | 'medium' | 'low' }) {
-  const map = { high: ['red', '高'], medium: ['amber', '中'], low: ['gray', '低'] } as const;
-  return <Badge tone={map[level][0]}>{map[level][1]}</Badge>;
+/** 环比涨跌（广告场景：成本涨=坏=红，转化涨=好=绿） */
+export function DeltaBadge({
+  value,
+  goodWhenDown,
+  suffix = '%',
+}: {
+  value: number;
+  goodWhenDown?: boolean;
+  suffix?: string;
+}) {
+  const positive = value >= 0;
+  const good = goodWhenDown ? !positive : positive;
+  return (
+    <span
+      className={clsx(
+        'num inline-flex items-center gap-0.5 text-xs font-medium',
+        good ? 'text-success' : 'text-danger',
+      )}
+    >
+      {positive ? '▲' : '▼'}
+      {Math.abs(value).toFixed(1)}
+      {suffix}
+    </span>
+  );
 }

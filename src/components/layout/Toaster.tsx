@@ -1,16 +1,18 @@
-import { AlertCircle, CheckCircle2, Info, X } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Info, TriangleAlert, X } from 'lucide-react';
 import clsx from 'clsx';
 import { useUIStore } from '@/store/uiStore';
 
 const ICONS = {
   success: CheckCircle2,
   error: AlertCircle,
+  warning: TriangleAlert,
   info: Info,
 };
 
 const TONE = {
   success: 'text-success',
   error: 'text-danger',
+  warning: 'text-warning',
   info: 'text-primary',
 };
 

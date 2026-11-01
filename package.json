@@ -1,17 +1,21 @@
 {
-  "name": "yunshu-platform",
+  "name": "adlens-platform",
   "private": true,
   "version": "1.0.0",
-  "description": "云枢 · 大数据价值链服务平台（纯前端 + Mock，可打包为 Windows 便携版桌面应用）",
+  "description": "投见 AdLens · 跨平台广告数据分析平台（纯前端 + Mock 数据，可打包 Windows 便携版桌面应用）",
   "main": "electron/main.cjs",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "verify": "esbuild scripts/verify.ts --bundle --platform=node --format=esm --outfile=scripts/out/verify.mjs --alias:@=./src --log-level=warning && node scripts/out/verify.mjs",
+    "smoke": "esbuild scripts/smoke.tsx --bundle --platform=node --format=cjs --outfile=scripts/out/smoke.cjs --alias:@=./src --jsx=automatic --external:stream --log-level=warning && node scripts/out/smoke.cjs",
+    "check": "npm run typecheck && npm run verify && npm run smoke"
   },
   "author": {
-    "name": "yunshu"
+    "name": "adlens"
   },
   "dependencies": {
     "clsx": "^2.1.1",

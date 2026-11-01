@@ -1,43 +1,55 @@
 import { create } from 'zustand';
-import type { RoleCode, User } from '@/types';
-import { DEMO_IDENTITIES, USERS, TENANTS } from '@/mocks/tenants';
+import type { Role, RoleCode, User } from '@/types';
+
+export const ROLES: Role[] = [
+  {
+    code: 'lead',
+    name: '投放负责人',
+    desc: '看全局、批预算、下发变更',
+    permissions: ['suggest.dispatch', 'budget.edit', 'change.approve', 'account.manage'],
+  },
+  {
+    code: 'optimizer',
+    name: '优化师',
+    desc: '看数据、采纳建议、执行变更',
+    permissions: ['suggest.dispatch', 'budget.edit'],
+  },
+  {
+    code: 'analyst',
+    name: '数据分析师',
+    desc: '只读：看数据与模型结果，不改投放',
+    permissions: [],
+  },
+];
+
+export const ROLE_MAP: Record<RoleCode, Role> = ROLES.reduce(
+  (acc, r) => ({ ...acc, [r.code]: r }),
+  {} as Record<RoleCode, Role>,
+);
+
+export const USERS: User[] = [
+  { id: 'U-01', name: '陈默', role: 'lead', title: '品牌增长中心 · 投放负责人', avatar: '陈' },
+  { id: 'U-02', name: '周雨', role: 'optimizer', title: '效果投放组 · 高级优化师', avatar: '周' },
+  { id: 'U-03', name: '赵一诺', role: 'analyst', title: '数据科学组 · 数据分析师', avatar: '赵' },
+];
+
+export function hasPerm(role: RoleCode, need: string): boolean {
+  return ROLE_MAP[role]?.permissions.includes(need) ?? false;
+}
 
 interface AuthState {
-  user: User | null;
-  tenantId: string;
-  login: (role: RoleCode) => void;
-  loginAs: (userId: string) => void;
-  logout: () => void;
-  switchRole: (role: RoleCode) => void;
+  user: User;
+  switchUser: (id: string) => void;
+  can: (perm: string) => boolean;
 }
 
-const DEFAULT_USER = USERS[0];
-
-export const useAuthStore = create<AuthState>((set) => ({
-  user: DEFAULT_USER,
-  tenantId: DEFAULT_USER.tenantId,
-
-  login: (role) => {
-    const demo = DEMO_IDENTITIES.find((d) => USERS.find((u) => u.id === d.userId)?.role === role);
-    const u = demo ? USERS.find((x) => x.id === demo.userId) : USERS[0];
-    if (u) set({ user: u, tenantId: u.tenantId });
+export const useAuthStore = create<AuthState>((set, get) => ({
+  user: USERS[0],
+  switchUser: (id) => {
+    const u = USERS.find((x) => x.id === id);
+    if (u) set({ user: u });
   },
-
-  loginAs: (userId) => {
-    const u = USERS.find((x) => x.id === userId);
-    if (u) set({ user: u, tenantId: u.tenantId });
-  },
-
-  logout: () => set({ user: null }),
-
-  switchRole: (role) => {
-    const demo = DEMO_IDENTITIES.find((d) => USERS.find((u) => u.id === d.userId)?.role === role);
-    const u = demo ? USERS.find((x) => x.id === demo.userId) : undefined;
-    if (u) set({ user: u, tenantId: u.tenantId });
-  },
+  can: (perm) => hasPerm(get().user.role, perm),
 }));
 
-export function useCurrentTenant() {
-  const tenantId = useAuthStore((s) => s.tenantId);
-  return TENANTS.find((t) => t.id === tenantId) ?? TENANTS[0];
-}
+export const useCan = (perm: string) => useAuthStore((s) => hasPerm(s.user.role, perm));

@@ -1,466 +1,438 @@
-/* ============ 通用 ============ */
-export type ID = string;
+/* ============================================================
+ * 投见 AdLens · 跨平台广告数据智能分析平台
+ * 类型定义：全部围绕「投放数据处理 → 人群洞察 → 优化执行」闭环
+ * ============================================================ */
 
-export type RoleCode =
-  | 'tenant_admin'
-  | 'tenant_member'
-  | 'tenant_finance'
-  | 'ops'
-  | 'ops_compute'
-  | 'finance'
-  | 'super_admin';
+export type ID = string;
+export type DateStr = string; // YYYY-MM-DD
+export type Period = string; // YYYY-MM
+
+/* ---------------- 投放平台 ---------------- */
+export type PlatformCode = 'oceanengine' | 'tencent' | 'kuaishou' | 'baidu' | 'xiaohongshu' | 'bilibili';
+
+export interface Platform {
+  code: PlatformCode;
+  name: string; // 巨量引擎
+  product: string; // 抖音信息流
+  short: string; // 抖音
+  color: string;
+  /** 平台侧数据口径备注，体现「口径对齐」这一实际工程问题 */
+  caliber: string;
+}
+
+export type AccountStatus = 'active' | 'paused' | 'auth_expired' | 'balance_low';
+
+export interface AdAccount {
+  id: ID;
+  platform: PlatformCode;
+  name: string;
+  advertiserId: string;
+  /** 投放目标 */
+  objective: '成交' | '加购' | '种草' | '直播成交' | '线索';
+  status: AccountStatus;
+  balance: number;
+  dailyBudget: number;
+  lastSyncAt: string;
+  owner: string;
+  /** 基础投放参数（用于生成确定性数据） */
+  base: {
+    daily: number; // 基准日消耗
+    cpm: number;
+    ctr: number;
+    cvr: number;
+    aov: number;
+  };
+}
+
+/* ---------------- 基础量（唯一数据源） ---------------- */
+export interface Metrics {
+  impressions: number; // 曝光
+  clicks: number; // 点击
+  spend: number; // 消耗（元）
+  conversions: number; // 下单（转化）
+  paidOrders: number; // 支付成功单
+  gmv: number; // 成交金额（元）
+  reach: number; // 触达人数
+}
+
+export interface DailyRow extends Metrics {
+  date: DateStr;
+  accountId: ID;
+  platform: PlatformCode;
+}
+
+/* ---------------- 计划 / 创意 / 素材 ---------------- */
+export type PlanStatus = 'delivering' | 'paused' | 'limited' | 'learn' | 'ended';
+
+export interface AdPlan {
+  id: ID;
+  accountId: ID;
+  name: string;
+  objective: string;
+  bidType: 'oCPM' | 'CPC' | 'CPM';
+  bid: number;
+  dailyBudget: number;
+  status: PlanStatus;
+  /** 计划在账户内的消耗权重，用于把账户月汇总拆分到计划（保证 Σ计划 = 账户） */
+  weight: number;
+  startDate: DateStr;
+  /** 月汇总指标 */
+  m: Metrics;
+}
+
+export type MaterialType = '短视频' | '图文' | '直播切片' | '达人视频' | '搜索图文';
+
+export interface Creative {
+  id: ID;
+  planId: ID;
+  accountId: ID;
+  name: string; // 素材标题/文案
+  materialType: MaterialType;
+  materialId: ID;
+  status: 'active' | 'paused' | 'rejected';
+  /** 7 日 CTR 衰减曲线（用于判断素材疲劳） */
+  decay: number[];
+  m: Metrics;
+}
+
+export interface Material {
+  id: ID;
+  name: string;
+  type: MaterialType;
+  duration: number; // 秒，图文为 0
+  angle: string; // 卖点角度
+  fatigue: number; // 疲劳度 0-1
+  planCount: number;
+  m: Metrics;
+}
+
+/* ---------------- 人群洞察 ---------------- */
+export type AudienceDim = 'gender' | 'age' | 'city' | 'interest' | 'device' | 'hour';
+
+export interface AudienceSegment {
+  dim: AudienceDim;
+  label: string;
+  /** 该人群占总转化比例 0-1（同维度内合计为 1） */
+  convShare: number;
+  /** 该人群占总消耗比例 0-1（同维度内合计为 1） */
+  spendShare: number;
+  /** 大盘基准占比（行业），用于算 TGI */
+  benchmarkShare: number;
+  /** 以下为聚合计算结果 */
+  conversions: number;
+  spend: number;
+  gmv: number;
+  cpa: number;
+  roi: number;
+  /** 转化占比 / 大盘占比 × 100 */
+  tgi: number;
+}
+
+export interface LookalikePack {
+  id: ID;
+  name: string;
+  seed: string; // 种子人群说明
+  coverage: number; // 覆盖人数
+  similarity: number; // 相似度
+  status: 'ready' | 'building' | 'used';
+  planCount: number;
+  roi: number;
+  createdAt: string;
+}
+
+export interface TargetProfile {
+  title: string;
+  summary: string;
+  coreTags: string[];
+  sizeEstimate: number;
+  roi: number;
+  cpa: number;
+  cvrLift: number; // 相对大盘提升倍数
+}
+
+/* ---------------- 归因 ---------------- */
+export type AttributionModel = 'last' | 'first' | 'linear' | 'time_decay' | 'data_driven';
+
+export interface AttributionRow {
+  model: AttributionModel;
+  /** 各平台归因转化数，合计必须等于总转化 */
+  byPlatform: Record<PlatformCode, number>;
+  total: number;
+}
+
+export interface TouchPath {
+  path: string; // 巨量引擎 → 小红书 → 腾讯广告
+  conversions: number;
+  share: number;
+  avgTouch: number;
+  avgDays: number;
+  roi: number;
+}
+
+/* ---------------- 漏斗 ---------------- */
+export interface FunnelStage {
+  key: string;
+  label: string;
+  count: number;
+  /** 相对上一级转化率 */
+  stepRate: number;
+  /** 相对首环节转化率 */
+  totalRate: number;
+  benchmark: number; // 行业基准 stepRate
+}
+
+/* ---------------- 数据接入与数仓 ---------------- */
+export type SyncStatus = 'success' | 'running' | 'failed' | 'waiting';
+
+export interface SyncJob {
+  id: ID;
+  accountId: ID;
+  platform: PlatformCode;
+  type: 'incremental' | 'full';
+  status: SyncStatus;
+  startedAt: string;
+  durationSec: number;
+  rows: number;
+  watermark: string; // 数据水位线
+  retry: number;
+  message?: string;
+}
+
+export interface QualityCheck {
+  id: ID;
+  table: string;
+  rule: string;
+  category: '完整性' | '唯一性' | '及时性' | '一致性' | '有效性';
+  totalRows: number;
+  affectedRows: number;
+  severity: 'high' | 'medium' | 'low';
+  status: 'passed' | 'warning' | 'failed';
+  detail: string;
+  checkedAt: string;
+}
+
+export type LayerCode = 'ODS' | 'DWD' | 'DWS' | 'ADS';
+
+export interface DataField {
+  name: string;
+  type: string;
+  desc: string;
+  pii?: boolean;
+}
+
+export interface DataTable {
+  id: ID;
+  name: string;
+  cnName: string;
+  layer: LayerCode;
+  rows: number;
+  size: string;
+  updateFreq: string;
+  owner: string;
+  updatedAt: string;
+  upstream: ID[];
+  downstream: ID[];
+  fields: DataField[];
+  desc: string;
+  /** 样例数据，用于表详情展示，字段与 fields 对应 */
+  sample: Record<string, string | number>[];
+}
+
+export interface MetricDef {
+  key: string;
+  name: string;
+  en: string;
+  formula: string;
+  unit: string;
+  desc: string;
+  caliber: string;
+  /** 与平台后台口径是否存在差异 */
+  diff: string;
+}
+
+/* ---------------- 诊断与优化 ---------------- */
+export type AnomalyType = 'cost_up' | 'cvr_down' | 'volume_drop' | 'material_fatigue' | 'budget_pace' | 'quality';
+
+export interface Anomaly {
+  id: ID;
+  type: AnomalyType;
+  target: string;
+  accountId: ID;
+  metric: string;
+  current: string;
+  baseline: string;
+  changePct: number;
+  level: 'high' | 'medium' | 'low';
+  detectedAt: string;
+  /** 归因链：逐层下钻找到的根因 */
+  causeChain: { label: string; value: string; note: string }[];
+  conclusion: string;
+  suggestionId?: ID;
+}
+
+export type SuggestionType = 'budget' | 'bid' | 'targeting' | 'creative' | 'landing';
+export type SuggestionStatus = 'pending' | 'adopted' | 'dispatched' | 'ignored';
+
+export interface Suggestion {
+  id: ID;
+  type: SuggestionType;
+  title: string;
+  target: string;
+  accountId: ID;
+  /** 问题 */
+  problem: string;
+  /** 数据依据 */
+  evidence: { label: string; value: string; compare?: string }[];
+  /** 建议动作 */
+  action: string;
+  /** 预估影响 */
+  impact: { conversions: number; cpa: number; roi: number; note: string };
+  confidence: number; // 0-1
+  status: SuggestionStatus;
+  createdAt: string;
+}
+
+export type ChangeStatus = 'pending_approval' | 'dispatched' | 'effective' | 'failed';
+
+export interface ChangeOrder {
+  id: ID;
+  suggestionId?: ID;
+  accountId: ID;
+  target: string;
+  type: SuggestionType;
+  before: string;
+  after: string;
+  status: ChangeStatus;
+  createdAt: string;
+  effectiveAt: string | null;
+  operator: string;
+  /** 7 日效果回收 */
+  feedback?: {
+    days: number;
+    conversionsDelta: number;
+    cpaDelta: number;
+    roiDelta: number;
+    note: string;
+  };
+}
+
+export interface BudgetPlan {
+  planId: ID;
+  name: string;
+  accountName: string;
+  currentBudget: number;
+  suggestedBudget: number;
+  currentCpa: number;
+  marginalRoi: number; // 边际 ROI
+  /** 弹性系数：预算变化 1% 对应转化变化 % */
+  elasticity: number;
+}
+
+/* ---------------- 对账 ---------------- */
+export interface ReconcileRow {
+  platform: PlatformCode;
+  accountCount: number;
+  platformSpend: number; // 平台后台
+  ourSpend: number; // 我方采集
+  platformConv: number;
+  ourConv: number;
+  diffRate: number;
+  status: 'matched' | 'diff';
+  note: string;
+}
+
+/* ---------------- 人 / 权限 ---------------- */
+export type RoleCode = 'lead' | 'optimizer' | 'analyst';
 
 export interface Role {
   code: RoleCode;
   name: string;
-  scope: 'console' | 'admin' | 'finance';
   desc: string;
   permissions: string[];
 }
 
-/* ============ 租户 / 用户 ============ */
-export type TenantLevel = 'A' | 'B' | 'C';
-
-export interface Tenant {
-  id: ID;
-  name: string;
-  shortName: string;
-  industry: string;
-  level: TenantLevel;
-  taxNo: string;
-  address: string;
-  phone: string;
-  bankName: string;
-  bankAccount: string;
-  contactName: string;
-  contactPhone: string;
-  creditLimit: number;
-  balance: number;
-  status: 'active' | 'frozen' | 'trial';
-  createdAt: string;
-  salesOwner: string;
-  monthlyAvg: number;
-}
-
 export interface User {
   id: ID;
-  tenantId: ID;
   name: string;
-  email: string;
-  phone: string;
   role: RoleCode;
-  department: string;
-  status: 'active' | 'disabled';
-  lastLoginAt: string;
-}
-
-/* ============ 服务与模型 ============ */
-export type ServiceCategory =
-  | 'compute'
-  | 'model'
-  | 'data'
-  | 'match'
-  | 'generate'
-  | 'subscription';
-
-export const CATEGORY_LABEL: Record<ServiceCategory, string> = {
-  compute: '算力资源',
-  model: '模型调用',
-  data: '数据处理',
-  match: '智能匹配',
-  generate: '内容生成',
-  subscription: '订阅服务',
-};
-
-export interface PriceTier {
-  from: number;
-  to: number | null;
-  price: number;
-}
-
-export interface ServiceItem {
-  id: ID;
-  category: ServiceCategory;
-  name: string;
-  code: string;
-  unit: string;
-  billingMode: 'usage' | 'reserved' | 'subscription';
-  unitPrice: number;
-  priceTiers?: PriceTier[];
-  status: 'online' | 'offline';
-  description: string;
-}
-
-export type ModelType = 'text' | 'embedding' | 'multimodal' | 'audio' | 'structured';
-
-export interface ModelInfo {
-  id: ID;
-  serviceItemId: ID;
-  name: string;
-  vendor: string;
-  version: string;
-  type: ModelType;
-  capabilityTags: string[];
-  contextWindow: string;
-  inputPrice: number;
-  outputPrice: number;
-  qpsLimit: number;
-  sla: string;
-  avgLatency: number;
-  status: 'online' | 'offline' | 'beta';
-  intro: string;
-  params: { name: string; type: string; required: boolean; def: string; desc: string }[];
-  benchmark: { label: string; score: number }[];
-}
-
-/* ============ 算力 ============ */
-export interface ComputeSpec {
-  id: ID;
-  gpuModel: string;
-  memoryGB: number;
-  computeTFLOPS: number;
-  region: string;
-  zone: string;
-  unitPrice: number;
-  totalCards: number;
-  allocatedCards: number;
-  status: 'available' | 'tight' | 'soldout';
-  image: string;
-}
-
-export interface ComputeInstance {
-  id: ID;
-  tenantId: ID;
-  specId: ID;
-  specName: string;
-  image: string;
-  cardCount: number;
-  billingMode: 'usage' | 'reserved';
-  region: string;
-  status: 'running' | 'stopped' | 'creating' | 'released';
-  createdAt: string;
-  hoursUsed: number;
-  monthlyCost: number;
-}
-
-export interface Quota {
-  id: ID;
-  tenantId: ID;
-  specName: string;
-  cards: number;
-  usedCards: number;
-  expireAt: string;
-}
-
-/* ============ 数据 ============ */
-export interface DataSource {
-  id: ID;
-  tenantId: ID;
-  name: string;
-  type: 'mysql' | 'oss' | 'api' | 'file';
-  host: string;
-  status: 'connected' | 'error' | 'pending';
-  lastSyncAt: string;
-  tables: number;
-}
-
-export interface Dataset {
-  id: ID;
-  tenantId: ID;
-  name: string;
-  sourceId: ID;
-  rowCount: number;
-  fieldCount: number;
-  version: string;
-  qualityScore: number;
-  updatedAt: string;
-  schema: { field: string; type: string; desc: string; nullable: boolean }[];
-}
-
-export type JobStatus = 'running' | 'success' | 'failed' | 'waiting';
-
-export interface JobOperator {
-  name: string;
-  costMs: number;
-  status: 'success' | 'running' | 'waiting' | 'failed';
-  detail: string;
-}
-
-export interface DataJob {
-  id: ID;
-  tenantId: ID;
-  name: string;
-  datasetId: ID;
-  datasetName: string;
-  operators: JobOperator[];
-  status: JobStatus;
-  progress: number;
-  inputRows: number;
-  outputRows: number;
-  durationMs: number;
-  cost: number;
-  startedAt: string;
-  finishedAt: string | null;
-  quality: { label: string; score: number }[];
-  logs: { time: string; level: 'INFO' | 'WARN' | 'ERROR'; msg: string }[];
-}
-
-/* ============ 匹配 ============ */
-export interface MatchTask {
-  id: ID;
-  tenantId: ID;
-  name: string;
-  datasetA: string;
-  datasetB: string;
-  strategy: 'rule' | 'vector' | 'graph';
-  threshold: number;
-  status: JobStatus;
-  totalPairs: number;
-  highConf: number;
-  midConf: number;
-  lowConf: number;
-  createdAt: string;
-  reviewedCount: number;
-}
-
-export interface MatchPair {
-  id: ID;
-  taskId: ID;
-  left: Record<string, string>;
-  right: Record<string, string>;
-  confidence: number;
-  basis: string;
-  reviewStatus: 'pending' | 'approved' | 'rejected';
-}
-
-/* ============ 生成 ============ */
-export interface GenRecord {
-  id: ID;
-  tenantId: ID;
-  modelName: string;
-  template: string;
-  content: string;
-  units: number;
-  unitLabel: string;
-  cost: number;
-  status: 'success' | 'failed' | 'reviewing' | 'blocked';
-  createdAt: string;
-  latencyMs: number;
-}
-
-/* ============ API ============ */
-export interface ApiKey {
-  id: ID;
-  tenantId: ID;
-  name: string;
-  prefix: string;
-  maskedKey: string;
-  quotaDaily: number;
-  usedToday: number;
-  ipWhitelist: string[];
-  status: 'active' | 'revoked';
-  createdAt: string;
-  lastUsedAt: string;
-}
-
-export interface ApiCallLog {
-  id: ID;
-  tenantId: ID;
-  requestId: string;
-  serviceName: string;
-  apiKeyName: string;
-  latencyMs: number;
-  tokens: number;
-  statusCode: number;
-  cost: number;
-  occurredAt: string;
-  ip: string;
-}
-
-/* ============ 用量 ============ */
-export interface UsageRecord {
-  id: ID;
-  tenantId: ID;
-  period: string;
-  serviceItemId: ID;
-  serviceName: string;
-  category: ServiceCategory;
-  quantity: number;
-  unit: string;
-  unitPrice: number;
-  amount: number;
-  occurredAt: string;
-}
-
-/* ============ 账单 ============ */
-export type BillStatus =
-  | 'draft'
-  | 'pending_confirm'
-  | 'confirmed'
-  | 'invoiced'
-  | 'settled'
-  | 'disputed';
-
-export const BILL_STATUS_LABEL: Record<BillStatus, string> = {
-  draft: '待出账',
-  pending_confirm: '待确认',
-  confirmed: '已确认',
-  invoiced: '已开票',
-  settled: '已回款',
-  disputed: '有异议',
-};
-
-export interface BillItem {
-  id: ID;
-  billId: ID;
-  seq: number;
-  category: ServiceCategory;
-  serviceName: string;
-  billingMode: string;
-  quantity: number;
-  unit: string;
-  unitPrice: number;
-  amount: number;
-  remark?: string;
-}
-
-export interface Bill {
-  id: ID;
-  billNo: string;
-  tenantId: ID;
-  period: string;
-  status: BillStatus;
-  subtotal: number;
-  discount: number;
-  netAmount: number;
-  taxRate: number;
-  taxAmount: number;
-  total: number;
-  itemCount: number;
-  generatedAt: string;
-  confirmedAt: string | null;
-  invoiceId: ID | null;
-  paidAt: string | null;
-  overdueDays: number;
-}
-
-/* ============ 发票 ============ */
-export type InvoiceStatus = 'pending' | 'issued' | 'sent' | 'void';
-
-export const INVOICE_STATUS_LABEL: Record<InvoiceStatus, string> = {
-  pending: '待开票',
-  issued: '已开票',
-  sent: '已寄出',
-  void: '已作废',
-};
-
-export interface Invoice {
-  id: ID;
-  invoiceNo: string;
-  invoiceCode: string;
-  tenantId: ID;
-  billIds: ID[];
-  period: string;
   title: string;
-  taxNo: string;
-  address: string;
-  bankName: string;
-  itemName: string;
-  taxRate: number;
-  amount: number;
-  taxAmount: number;
-  total: number;
-  type: 'special' | 'normal';
-  status: InvoiceStatus;
-  issuedAt: string | null;
-  issuedBy: string;
-  payee: string;
-  reviewer: string;
-  drawer: string;
+  avatar: string;
 }
 
-/* ============ 回款 / 合同 ============ */
-export interface Payment {
-  id: ID;
-  tenantId: ID;
-  billId: ID;
-  billNo: string;
-  amount: number;
-  paidAt: string;
-  serialNo: string;
-  method: 'transfer' | 'acceptance' | 'offset';
-  status: 'matched' | 'unmatched';
-}
+/* ---------------- 中文标签 ---------------- */
+export const ACCOUNT_STATUS_LABEL: Record<AccountStatus, string> = {
+  active: '投放中',
+  paused: '已暂停',
+  auth_expired: '授权过期',
+  balance_low: '余额预警',
+};
 
-export interface Contract {
-  id: ID;
-  tenantId: ID;
-  contractNo: string;
-  name: string;
-  startDate: string;
-  endDate: string;
-  settlementCycle: string;
-  slaLevel: string;
-  amount: number;
-  status: 'active' | 'expiring' | 'expired';
-  attachments: string[];
-}
+export const PLAN_STATUS_LABEL: Record<PlanStatus, string> = {
+  delivering: '投放中',
+  paused: '已暂停',
+  limited: '预算受限',
+  learn: '学习期',
+  ended: '已结束',
+};
 
-/* ============ 工单 / 公告 / 审计 ============ */
-export interface Ticket {
-  id: ID;
-  tenantId: ID;
-  tenantName: string;
-  title: string;
-  category: string;
-  priority: 'high' | 'medium' | 'low';
-  status: 'open' | 'processing' | 'resolved' | 'closed';
-  assignee: string;
-  slaDeadline: string;
-  createdAt: string;
-  replies: { by: string; at: string; content: string }[];
-}
+export const SYNC_STATUS_LABEL: Record<SyncStatus, string> = {
+  success: '成功',
+  running: '同步中',
+  failed: '失败',
+  waiting: '排队中',
+};
 
-export interface AuditLog {
-  id: ID;
-  actorName: string;
-  actorRole: string;
-  action: string;
-  target: string;
-  targetType: string;
-  ip: string;
-  createdAt: string;
-}
+export const SUGGESTION_TYPE_LABEL: Record<SuggestionType, string> = {
+  budget: '预算调整',
+  bid: '出价调整',
+  targeting: '定向优化',
+  creative: '素材优化',
+  landing: '落地页',
+};
 
-export interface AlertItem {
-  id: ID;
-  level: 'critical' | 'warning' | 'info';
-  type: string;
-  message: string;
-  target: string;
-  status: 'firing' | 'resolved';
-  createdAt: string;
-}
+export const SUGGESTION_STATUS_LABEL: Record<SuggestionStatus, string> = {
+  pending: '待处理',
+  adopted: '已采纳',
+  dispatched: '已下发',
+  ignored: '已忽略',
+};
 
-export interface ReviewItem {
-  id: ID;
-  tenantName: string;
-  contentType: string;
-  snippet: string;
-  reason: string;
-  riskLevel: 'high' | 'medium' | 'low';
-  status: 'pending' | 'approved' | 'rejected';
-  createdAt: string;
-}
+export const CHANGE_STATUS_LABEL: Record<ChangeStatus, string> = {
+  pending_approval: '待审批',
+  dispatched: '已下发',
+  effective: '已生效',
+  failed: '执行失败',
+};
 
-export interface DiscountRequest {
-  id: ID;
-  tenantName: string;
-  serviceName: string;
-  basePrice: number;
-  requestRate: number;
-  reason: string;
-  applicant: string;
-  status: 'pending' | 'approved' | 'rejected';
-  createdAt: string;
-}
+export const ANOMALY_TYPE_LABEL: Record<AnomalyType, string> = {
+  cost_up: '成本上涨',
+  cvr_down: '转化下滑',
+  volume_drop: '掉量',
+  material_fatigue: '素材疲劳',
+  budget_pace: '预算节奏',
+  quality: '数据异常',
+};
+
+export const ATTR_MODEL_LABEL: Record<AttributionModel, string> = {
+  last: '末次点击',
+  first: '首次点击',
+  linear: '线性归因',
+  time_decay: '时间衰减',
+  data_driven: '数据驱动',
+};
+
+export const DIM_LABEL: Record<AudienceDim, string> = {
+  gender: '性别',
+  age: '年龄',
+  city: '城市等级',
+  interest: '兴趣标签',
+  device: '设备',
+  hour: '活跃时段',
+};
+
+export const LAYER_LABEL: Record<LayerCode, string> = {
+  ODS: 'ODS 原始层',
+  DWD: 'DWD 明细层',
+  DWS: 'DWS 汇总层',
+  ADS: 'ADS 应用层',
+};
