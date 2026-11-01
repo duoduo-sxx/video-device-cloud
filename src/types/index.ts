@@ -136,11 +136,14 @@ export interface LookalikePack {
   similarity: number; // 相似度
   status: 'ready' | 'building' | 'used';
   planCount: number;
+  /** 使用该人群包的在投计划 */
+  planIds: string[];
   roi: number;
   createdAt: string;
 }
 
 export interface TargetProfile {
+  planId: string;
   title: string;
   summary: string;
   coreTags: string[];
@@ -149,6 +152,45 @@ export interface TargetProfile {
   cpa: number;
   cvrLift: number; // 相对大盘提升倍数
 }
+
+/**
+ * 单个广告（计划）在投放后台设置的定向条件。
+ * scope 为该维度允许命中的标签，缺省视为「不限」。
+ */
+export interface PlanTargeting {
+  planId: string;
+  scope: Record<AudienceDim, string[]>;
+}
+
+/**
+ * 定向设定 vs 实际触达的偏差：同一个人群维度，设置的圈选范围与真实转化结构的差距。
+ * hitRate = 定向范围内标签的转化占比；spill = 1 - hitRate，即「跑到圈外的人」。
+ */
+export interface TargetingHit {
+  dim: AudienceDim;
+  /** 定向设定的人类可读文案，由 scope 自动生成 */
+  settingText: string;
+  /** 定向范围内的转化占比 */
+  hitRate: number;
+  /** 定向外溢出占比 */
+  spillShare: number;
+  /** 该维度是否做了定向收窄（false = 全量投放，命中率无意义） */
+  open: boolean;
+  /** 定向内实际浓度 / 自然基准浓度，>1 说明定向起作用 */
+  lift: number;
+  /** 实际转化 Top1 标签 */
+  actualTop: string;
+  actualTopShare: number;
+  /** 圈外占比最大的标签（跑偏的主要来源） */
+  spillLabel: string;
+  spillShareOfLabel: number;
+  spillTgi: number;
+  verdict: 'ok' | 'spill' | 'drift';
+  note: string;
+}
+
+/** 一个广告的人群画像：六个维度各自独立分布，维度内合计 100% */
+export type PlanAudience = Record<AudienceDim, AudienceSegment[]>;
 
 /* ---------------- 归因 ---------------- */
 export type AttributionModel = 'last' | 'first' | 'linear' | 'time_decay' | 'data_driven';

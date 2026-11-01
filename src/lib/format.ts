@@ -10,6 +10,11 @@ export function num(v: number): string {
   return moneyFmt.format(v);
 }
 
+/** 整数展示：1082 -> "1,082"（计数类字段不要带小数） */
+export function int(v: number): string {
+  return new Intl.NumberFormat('zh-CN', { maximumFractionDigits: 0 }).format(v);
+}
+
 /** 1234567.8 -> "¥1,234,567.80" */
 export function money(v: number): string {
   return `¥${moneyFmt.format(v)}`;

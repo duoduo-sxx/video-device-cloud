@@ -14,7 +14,17 @@ import {
 } from '@/mocks/daily';
 import { AD_PLANS, CREATIVES, MATERIALS, plansOfAccount, creativesOfPlan } from '@/mocks/campaigns';
 import { ATTRIBUTION } from '@/mocks/attribution';
-import { AUDIENCE } from '@/mocks/audience';
+import {
+  AUDIENCE,
+  DIMS,
+  LOOKALIKE_PACKS,
+  PLAN_AUDIENCE,
+  ageTgiMatrix,
+  packsOf,
+  profileOf,
+  targetingHits,
+  targetingSummary,
+} from '@/mocks/audience';
 import { FUNNEL } from '@/mocks/funnel';
 import { ANOMALIES, SUGGESTIONS, CHANGE_ORDERS, RECONCILE, BUDGET_PLANS } from '@/mocks/insights';
 import { DATA_TABLES, QUALITY_CHECKS, SYNC_JOBS, METRIC_DEFS } from '@/mocks/pipeline';
@@ -109,6 +119,78 @@ for (const dim of Object.keys(AUDIENCE) as AudienceDim[]) {
   eq(`[人群转化] ${dim} 合计 = 大盘`, c, totalMetrics().conversions, Math.max(1, list.length * 0.5));
   const b = list.reduce((s, x) => s + x.benchmarkShare, 0);
   eq(`[人群基准] ${dim}.benchmarkShare`, b, 1, 0.002);
+}
+
+/* ---------- 7b. 人群：以「单个广告」为单位，逐层与大盘对齐 ---------- */
+{
+  // 每个广告、每个维度：占比合计 100%，转化/消耗合计 = 该广告自身
+  for (const plan of AD_PLANS) {
+    for (const dim of DIMS) {
+      const list = PLAN_AUDIENCE[plan.id][dim];
+      eq(`[广告人群] ${plan.id}.${dim} 占比合计`, list.reduce((s, x) => s + x.convShare, 0), 1, 0.002);
+      const c = list.reduce((s, x) => s + x.conversions, 0);
+      ok(`[广告人群] ${plan.id}.${dim} 转化合计`, Math.abs(c - plan.m.conversions) <= 1, `${c}/${plan.m.conversions}`);
+      const sp = list.reduce((s, x) => s + x.spend, 0);
+      ok(`[广告人群] ${plan.id}.${dim} 消耗合计`, Math.abs(sp - plan.m.spend) <= 0.05, `${sp.toFixed(2)}/${plan.m.spend.toFixed(2)}`);
+    }
+  }
+
+  // 大盘人群 = Σ 各广告人群（逐标签严格相等）
+  for (const dim of DIMS) {
+    AUDIENCE[dim].forEach((seg, i) => {
+      const sum = AD_PLANS.reduce(
+        (s, p) => s + (PLAN_AUDIENCE[p.id][dim][i]?.conversions ?? 0),
+        0,
+      );
+      eq(`[人群汇总] ${dim}.${seg.label} = Σ广告`, seg.conversions, sum, 0);
+    });
+  }
+
+  // 定向命中率：区间合法、与溢出互补、跑偏广告数量符合演示预期
+  let driftCount = 0;
+  for (const plan of AD_PLANS) {
+    const hits = targetingHits(plan.id);
+    ok(`[定向] ${plan.id} 覆盖六个维度`, hits.length === DIMS.length, String(hits.length));
+    for (const h of hits) {
+      ok(`[定向] ${plan.id}.${h.dim} 命中率在 0-1`, h.hitRate >= 0 && h.hitRate <= 1.0001, String(h.hitRate));
+      ok(`[定向] ${plan.id}.${h.dim} 命中+溢出=1`, Math.abs(h.hitRate + h.spillShare - 1) < 1e-9);
+    }
+    const summary = targetingSummary(plan.id);
+    if (summary.driftDims.length > 0) driftCount++;
+    ok(`[定向] ${plan.id} 未收窄维度不算跑偏`, hits.filter((h) => h.open).every((h) => h.verdict === 'ok'));
+    ok(
+      `[定向] ${plan.id} 收窄维度数 = 非 open 数`,
+      summary.narrowed === hits.filter((h) => !h.open).length,
+      `${summary.narrowed}`,
+    );
+
+    const prof = profileOf(plan.id);
+    ok(`[画像] ${plan.id} 六个核心标签`, prof.coreTags.length === 6, String(prof.coreTags.length));
+    ok(`[画像] ${plan.id} 结论文案完整`, prof.summary.length > 60, String(prof.summary.length));
+    ok(`[画像] ${plan.id} 可拓展规模为正`, prof.sizeEstimate > 0, String(prof.sizeEstimate));
+  }
+  ok('[定向] 明显跑偏的广告数在演示区间 2-8', driftCount >= 2 && driftCount <= 8, `${driftCount} 个`);
+
+  // 人群包 ↔ 计划 双向引用
+  const planIdSet = new Set(AD_PLANS.map((p) => p.id));
+  for (const pack of LOOKALIKE_PACKS) {
+    for (const pid of pack.planIds) ok(`[人群包] ${pack.id} → 计划 ${pid}`, planIdSet.has(pid), pid);
+    ok(`[人群包] ${pack.id} 计划数一致`, pack.planIds.length === pack.planCount, `${pack.planIds.length}/${pack.planCount}`);
+  }
+  for (const plan of AD_PLANS) {
+    for (const pack of packsOf(plan.id)) {
+      ok(`[人群包] ${pack.id} 反向包含 ${plan.id}`, pack.planIds.includes(plan.id));
+    }
+  }
+
+  // 跨广告矩阵
+  const matrix = ageTgiMatrix(8);
+  ok('[矩阵] 行数不超过 8', matrix.plans.length <= 8, String(matrix.plans.length));
+  ok('[矩阵] 年龄列数一致', matrix.ageLabels.length === 5, String(matrix.ageLabels.length));
+  for (const row of matrix.plans) {
+    ok(`[矩阵] ${row.id} 每行 5 列`, row.cells.length === 5);
+    for (const c of row.cells) ok(`[矩阵] ${row.id}.${c.label} TGI 为正`, c.tgi > 0, String(c.tgi));
+  }
 }
 
 /* ---------- 8. 漏斗：逐级递减且首级 = 总曝光 ---------- */
