@@ -1,0 +1,85 @@
+name: SpaceScape
+
+on:
+  workflow_dispatch:
+    inputs:
+      electron_version:
+        description: 'Electron 版本（留空自动取 npm latest）'
+        required: false
+        default: ''
+  push:
+    branches:
+      - spacescape-console
+    paths:
+      - 'src/**'
+      - 'electron/**'
+      - 'build/**'
+      - 'electron-builder.yml'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/spacescape.yml'
+
+jobs:
+  build-windows-portable:
+    name: Windows 便携版打包
+    runs-on: windows-latest
+    timeout-minutes: 40
+
+    env:
+      ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
+      NPM_CONFIG_ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
+      ELECTRON_BUILDER_BINARIES_MIRROR: https://npmmirror.com/mirrors/electron-builder-binaries/
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 安装 Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: 安装依赖
+        run: npm install --no-audit --no-fund
+        shell: pwsh
+
+      - name: 构建前端产物
+        run: npm run build
+        shell: pwsh
+
+      - name: 解析 Electron 版本
+        id: electron
+        shell: pwsh
+        run: |
+          $manual = "${{ github.event.inputs.electron_version }}".Trim()
+          if ($manual) {
+            $v = $manual
+          } else {
+            $v = (npm view electron version).ToString().Trim()
+          }
+          Write-Host "ELECTRON_VERSION = $v"
+          "version=$v" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          "ELECTRON_VERSION=$v" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
+      - name: electron-builder 打包（win portable x64）
+        shell: pwsh
+        env:
+          PACK_OUTPUT: release-${{ github.run_number }}
+        run: |
+          npx --yes electron-builder@latest --win portable --x64 `
+            --config electron-builder.yml `
+            -c.electronVersion=$env:ELECTRON_VERSION `
+            -c.directories.output=$env:PACK_OUTPUT
+
+      - name: 列出产物
+        shell: pwsh
+        run: Get-ChildItem -Path "release-${{ github.run_number }}" -Recurse | Select-Object FullName, Length
+
+      - name: 上传便携版产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: SpaceScape-portable-x64
+          path: release-${{ github.run_number }}/*.exe
+          if-no-files-found: error
+          retention-days: 14

@@ -1,0 +1,20 @@
+# 依赖与产物
+node_modules/
+dist/
+release/
+release-*/
+*.tsbuildinfo
+
+# 日志与环境
+*.log
+.DS_Store
+.env
+.env.*
+
+# 编辑器
+.idea/
+.vscode/
+*.swp
+
+# 桌面打包中间产物
+build/SpaceScape.iconset/

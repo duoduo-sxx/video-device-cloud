@@ -1,0 +1,73 @@
+# SpaceScape 桌面打包配置
+# 用法（Windows cmd，无需在项目里安装 electron / electron-builder 依赖）：
+#   set ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/
+#   set NPM_CONFIG_ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/
+#   set ELECTRON_BUILDER_BINARIES_MIRROR=https://npmmirror.com/mirrors/electron-builder-binaries/
+#   npm install
+#   npm run build
+#   for /f "delims=" %i in ('npm view electron version') do set "ELECTRON_VERSION=%i"
+#   set "PACK_OUTPUT=release-retry-%RANDOM%"
+#   npx --yes electron-builder@latest --win portable --x64 --config electron-builder.yml -c.electronVersion=%ELECTRON_VERSION% -c.directories.output=%PACK_OUTPUT%
+
+appId: cn.spacescape.console
+productName: SpaceScape
+copyright: Copyright © 2026 SpaceScape
+
+directories:
+  buildResources: build
+  output: release
+
+# 只打包前端构建产物 + 桌面壳主进程；node_modules 全部排除
+# （前端依赖已在 vite build 阶段打进 dist，运行时不需要）
+files:
+  - dist/**/*
+  - electron/**/*
+  - package.json
+  - "!node_modules/**/*"
+  - "!src/**/*"
+  - "!scripts/**/*"
+  - "!*.md"
+
+extraMetadata:
+  main: electron/main.cjs
+
+asar: true
+compression: maximum
+buildVersion: '1.0.0'
+
+# ---------- Windows（便携版，x64） ----------
+win:
+  icon: build/icon.ico
+  target:
+    - target: portable
+      arch:
+        - x64
+  artifactName: ${productName}-${version}-portable-x64.${ext}
+  publisherName: SpaceScape
+
+portable:
+  artifactName: ${productName}-${version}-portable-x64.exe
+  requestExecutionLevel: user
+
+# ---------- macOS（可选，留好配置即可触发） ----------
+mac:
+  icon: build/icon.icns
+  target:
+    - dmg
+  category: public.app-category.video
+  artifactName: ${productName}-${version}-${arch}.${ext}
+
+# ---------- Linux（可选） ----------
+linux:
+  icon: build/icon.png
+  target:
+    - AppImage
+  category: AudioVideo
+  artifactName: ${productName}-${version}-${arch}.${ext}
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  shortcutName: SpaceScape
