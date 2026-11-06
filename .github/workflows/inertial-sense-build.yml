@@ -1,0 +1,76 @@
+name: 惯性参数感知系统
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - 'feat/**'
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+jobs:
+  build-windows-portable:
+    name: Windows 便携版打包
+    runs-on: windows-latest
+
+    env:
+      # 国内镜像，加速 electron / electron-builder 二进制下载
+      ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
+      NPM_CONFIG_ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
+      ELECTRON_BUILDER_BINARIES_MIRROR: https://npmmirror.com/mirrors/electron-builder-binaries/
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 安装 Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: 缓存 Electron 二进制
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~\AppData\Local\electron\Cache
+            ~\AppData\Local\electron-builder\Cache
+          key: electron-bin-${{ runner.os }}
+
+      - name: 安装依赖
+        run: npm install
+        shell: pwsh
+
+      - name: 构建前端产物
+        run: npm run build
+        shell: pwsh
+
+      - name: 读取 Electron 最新版本
+        id: electron
+        shell: pwsh
+        run: |
+          $v = ("$(npm view electron version)").Trim()
+          Write-Host "Electron 版本：$v"
+          "version=$v" >> $env:GITHUB_OUTPUT
+
+      - name: electron-builder 打包（Windows portable x64）
+        shell: pwsh
+        run: |
+          $out = "release-" + [guid]::NewGuid().ToString('N').Substring(0, 8)
+          Write-Host "输出目录：$out"
+          npx --yes electron-builder@latest --win portable --x64 --config electron-builder.yml `
+            -c.electronVersion=${{ steps.electron.outputs.version }} `
+            -c.directories.output=$out
+          "OUTDIR=$out" >> $env:GITHUB_ENV
+
+      - name: 上传打包产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: 惯性参数感知系统-Windows便携版
+          path: |
+            ${{ env.OUTDIR }}/*.exe
+          if-no-files-found: error
+          retention-days: 14

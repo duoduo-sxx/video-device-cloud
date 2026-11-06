@@ -1,0 +1,12 @@
+node_modules
+dist
+release
+release-*
+.DS_Store
+*.local
+.vite
+vite-cache
+*.log
+tmpdeps
+*.tsbuildinfo
+vite.config.ts.timestamp-*

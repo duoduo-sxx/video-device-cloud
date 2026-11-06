@@ -1,0 +1,37 @@
+# 惯性参数感知系统 · electron-builder 打包配置
+# 本项目不依赖 electron npm 包：electronVersion 由命令行传入
+#   npx --yes electron-builder@latest --win portable --x64 --config electron-builder.yml \
+#     -c.electronVersion=<版本> -c.directories.output=<输出目录>
+
+appId: com.duoduo.inertialsense
+productName: 惯性参数感知系统
+copyright: Copyright © 2026 duoduo-sxx
+
+directories:
+  # 图标等构建资源目录（build/icon.ico）
+  buildResources: build
+  # 默认输出目录，命令行 -c.directories.output 可覆盖
+  output: release
+
+# 只打包运行所需内容，不携带任何开发依赖
+files:
+  - dist/**
+  - electron/**
+  - package.json
+
+# 无任何原生模块，asar 即可
+asar: true
+compression: maximum
+
+win:
+  icon: build/icon.ico
+  artifactName: ${productName}-${version}-portable.${ext}
+  target:
+    - target: portable
+      arch:
+        - x64
+
+portable:
+  # 单文件免安装 exe
+  artifactName: ${productName}-${version}.exe
+  requestExecutionLevel: user
