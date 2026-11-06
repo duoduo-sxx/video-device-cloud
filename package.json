@@ -3,6 +3,8 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
+  "description": "SpaceScape · 空间视频转换系统及技术服务控制台（纯前端 + 桌面壳）",
+  "author": "SpaceScape <dev@spacescape.cn>",
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",

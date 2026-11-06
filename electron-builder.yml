@@ -36,6 +36,7 @@ compression: maximum
 buildVersion: '1.0.0'
 
 # ---------- Windows（便携版，x64） ----------
+# 注意：electron-builder 26.x 的 win 段不再支持 publisherName（移入 signtoolOptions，仅签名时使用）
 win:
   icon: build/icon.ico
   target:
@@ -43,7 +44,6 @@ win:
       arch:
         - x64
   artifactName: ${productName}-${version}-portable-x64.${ext}
-  publisherName: SpaceScape
 
 portable:
   artifactName: ${productName}-${version}-portable-x64.exe
