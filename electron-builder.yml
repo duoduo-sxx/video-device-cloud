@@ -1,0 +1,32 @@
+# Electron 打包配置（Windows portable）
+# 注意：本工程不引入 electron 依赖，打包时通过命令行 -c.electronVersion 指定版本
+appId: com.duoduo.storageops
+productName: StorageOps
+copyright: Copyright © 2026 数据存储系统与技术服务
+
+directories:
+  output: release
+  buildResources: build
+
+files:
+  - dist/**
+  - package.json
+
+# 不打包任何源码与 node_modules（纯前端产物，运行时无需 Node 模块）
+asar: true
+
+win:
+  target:
+    - target: portable
+      arch:
+        - x64
+  icon: build/icon.ico
+  artifactName: ${productName}-${version}-${arch}-portable.${ext}
+
+portable:
+  # 免安装单文件，直接双击运行
+  artifactName: ${productName}-${version}-portable.${ext}
+
+npmRebuild: false
+electronLanguages:
+  - zh-CN

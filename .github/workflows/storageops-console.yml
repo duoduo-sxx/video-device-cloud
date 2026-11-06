@@ -1,0 +1,54 @@
+name: 数据存储系统与技术服务
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - storageops-web
+
+jobs:
+  build-win-portable:
+    name: Windows 便携版打包
+    runs-on: windows-latest
+    env:
+      ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
+      NPM_CONFIG_ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
+      ELECTRON_BUILDER_BINARIES_MIRROR: https://npmmirror.com/mirrors/electron-builder-binaries/
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 安装 Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: 安装依赖
+        run: npm install --no-audit --no-fund
+
+      - name: 构建前端产物
+        run: npm run build
+
+      - name: 获取 Electron 最新版本号
+        id: electron
+        shell: bash
+        run: |
+          VER=$(npm view electron version)
+          echo "version=$VER" >> $GITHUB_OUTPUT
+          echo "Electron version: $VER"
+
+      - name: electron-builder 打包 Windows portable
+        shell: bash
+        run: |
+          npx --yes electron-builder@latest --win portable --x64 \
+            --config electron-builder.yml \
+            -c.electronVersion=${{ steps.electron.outputs.version }} \
+            -c.directories.output=release
+
+      - name: 上传打包产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: StorageOps-Windows-Portable
+          path: release/*.exe
+          if-no-files-found: error
