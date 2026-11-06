@@ -20,7 +20,9 @@ name: 视频清晰度增强系统
 on:
   workflow_dispatch: {} # 手动触发
   push:
-    branches: [main]
+    branches:
+      - main
+      - feat/vidclear-studio # 功能分支也触发构建，便于合并前验证打包
     tags:
       - 'v*'
 
