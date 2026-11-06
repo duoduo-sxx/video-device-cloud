@@ -1,0 +1,51 @@
+# 音视频自动化修补系统 · electron-builder 打包配置
+# 打包方式（Windows 便携版示例）：
+#   npx electron-builder --win portable --x64 --config electron-builder.yml \
+#     -c.electronVersion=<electron 版本> -c.directories.output=<输出目录>
+#
+# 注意：项目不引入 electron npm 依赖，运行时版本通过 -c.electronVersion 注入，
+#       配合国内镜像（ELECTRON_MIRROR / ELECTRON_BUILDER_BINARIES_MIRROR）离线可复现。
+
+appId: com.avrepair.studio
+productName: AV-Repair-Studio
+copyright: Copyright © 2026 云溪广电内容技术中心
+
+directories:
+  output: release
+  buildResources: build
+
+# 仅打包前端产物 + 主进程入口；node_modules 全部为构建期依赖，一律排除
+files:
+  - dist/**/*
+  - electron/**/*
+  - build/icon.png
+  - package.json
+  - "!node_modules/**/*"
+  - "!src/**/*"
+  - "!dist/assets/*.map"
+
+asar: true
+compression: maximum
+electronLanguages:
+  - zh-CN
+  - en-US
+
+win:
+  icon: build/icon.ico
+  artifactName: AV-Repair-Studio-${version}-portable-${arch}.${ext}
+  # 不签名：内网分发用，如需签名在 CI 中注入证书变量
+  signAndEditExecutable: false
+  requestedExecutionLevel: asInvoker
+
+portable:
+  artifactName: AV-Repair-Studio-${version}-portable-${arch}.${ext}
+  # 便携版运行目录跟随 exe 所在位置，避免写进临时目录
+  unpackDirName: false
+
+# 如需安装包形态，追加：npx electron-builder --win nsis --x64 ...
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  shortcutName: 音视频自动化修补系统

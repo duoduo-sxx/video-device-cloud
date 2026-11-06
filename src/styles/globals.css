@@ -1,0 +1,172 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-0: #070a0f;
+  --bg-1: #0e131b;
+  --bg-2: #151c26;
+  --bg-3: #1d2632;
+  --border: #263140;
+  --border-str: #34414f;
+  --text-1: #e6edf5;
+  --text-2: #a7b4c4;
+  --text-3: #6e7d90;
+  --primary: #22d3ee;
+  --primary-10: rgba(34, 211, 238, 0.1);
+  --primary-20: rgba(34, 211, 238, 0.2);
+  --accent: #fbbf24;
+  --success: #34d399;
+  --danger: #f87171;
+  --info: #60a5fa;
+  --purple: #a78bfa;
+}
+
+* {
+  box-sizing: border-box;
+  scrollbar-width: thin;
+  scrollbar-color: #2f3b4b transparent;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg-0);
+  color: var(--text-1);
+  font-family: Inter, 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #2f3b4b;
+  border-radius: 8px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #3d4c60;
+}
+
+.mono {
+  font-family: 'JetBrains Mono', 'SF Mono', ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+.card {
+  background: var(--bg-1);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.panel {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.hairline {
+  border-color: var(--border);
+}
+
+.focus-ring:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+input,
+select,
+textarea,
+button {
+  font-family: inherit;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--text-3);
+}
+
+.row-hover:hover {
+  background: var(--bg-3);
+}
+
+.scan-grid {
+  background-image: linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.anim-in {
+  animation: fadeUp 180ms ease-out;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -320px 0;
+  }
+  100% {
+    background-position: 320px 0;
+  }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, #151c26 0%, #1d2632 50%, #151c26 100%);
+  background-size: 640px 100%;
+  animation: shimmer 1.4s linear infinite;
+  border-radius: 6px;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: #fff;
+    color: #111;
+  }
+  .print-root {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  .report-paper {
+    box-shadow: none !important;
+    border: none !important;
+    width: 210mm !important;
+    min-height: 297mm;
+    margin: 0 !important;
+  }
+  .avoid-break {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  @page {
+    size: A4;
+    margin: 12mm;
+  }
+}

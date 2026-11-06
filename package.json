@@ -1,0 +1,35 @@
+{
+  "name": "av-repair-studio",
+  "productName": "音视频自动化修补系统",
+  "description": "音视频自动化修补软件与技术服务平台（纯前端实现，数据 Mock，可打包为桌面端）",
+  "author": "云溪广电 · 内容技术中心",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "main": "electron/main.cjs",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "dist:win": "node scripts/pack-win.mjs"
+  },
+  "devDependencies": {
+    "@types/react": "18.3.11",
+    "@types/react-dom": "18.3.0",
+    "@vitejs/plugin-react": "4.3.2",
+    "autoprefixer": "10.4.20",
+    "clsx": "2.1.1",
+    "dayjs": "1.11.13",
+    "lucide-react": "0.451.0",
+    "postcss": "8.4.47",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "react-router-dom": "6.26.2",
+    "tailwind-merge": "2.5.3",
+    "tailwindcss": "3.4.13",
+    "typescript": "5.6.2",
+    "vite": "5.4.8",
+    "zustand": "4.5.5"
+  }
+}
