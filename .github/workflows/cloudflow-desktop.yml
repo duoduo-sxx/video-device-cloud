@@ -51,15 +51,33 @@ jobs:
           ELECTRON_VERSION: ${{ steps.electron.outputs.version }}
         run: |
           $outDir = "release-$([System.Guid]::NewGuid().ToString('N').Substring(0,8))"
+          $logPath = Join-Path $PWD "electron-builder.log"
           npx --yes electron-builder@latest --win portable --x64 `
             --config electron-builder.yml `
             -c.electronVersion=$env:ELECTRON_VERSION `
-            -c.directories.output=$outDir
+            -c.directories.output=$outDir 2>&1 | Tee-Object -FilePath $logPath
+          $code = $LASTEXITCODE
+          if ($code -ne 0) {
+            $tail = (Get-Content $logPath -Tail 30) -join ' | '
+            $tail = $tail -replace '%', '%25' -replace "`r", '' -replace "`n", ' '
+            Write-Host "::error title=electron-builder 打包失败::$tail"
+            exit $code
+          }
           Write-Host "=== 输出目录内容 ==="
           Get-ChildItem -Recurse $outDir | ForEach-Object { $_.FullName }
           if (-not (Get-ChildItem "$outDir" -Filter *.exe -ErrorAction SilentlyContinue)) {
-            throw "打包完成但未生成 exe：$outDir"
+            Write-Host "::error title=未生成 exe::打包完成但 $outDir 下没有 exe 文件"
+            exit 1
           }
+
+      - name: 保存打包日志
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: electron-builder-log
+          path: electron-builder.log
+          if-no-files-found: ignore
+          retention-days: 7
 
       - name: 上传打包产物
         uses: actions/upload-artifact@v4
