@@ -9,3 +9,4 @@ release*/
 .vscode/
 .idea/
 .DS_Store
+vite.config.ts.timestamp-*.mjs
