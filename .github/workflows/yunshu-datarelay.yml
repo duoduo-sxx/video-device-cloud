@@ -1,0 +1,57 @@
+name: 云枢 DataRelay
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - feat/**
+    paths-ignore:
+      - '**.md'
+      - 'shots/**'
+
+jobs:
+  build-windows-portable:
+    name: Windows 便携版打包
+    runs-on: windows-latest
+
+    env:
+      ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
+      NPM_CONFIG_ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
+      ELECTRON_BUILDER_BINARIES_MIRROR: https://npmmirror.com/mirrors/electron-builder-binaries/
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 安装 Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: 安装依赖
+        run: npm ci
+
+      - name: 构建前端产物
+        run: npm run build
+
+      - name: 读取 Electron 版本
+        id: electron-version
+        shell: bash
+        run: echo "version=$(npm view electron version)" >> "$GITHUB_OUTPUT"
+
+      - name: 打包 Windows 便携版
+        run: >
+          npx --yes electron-builder@latest --win portable --x64
+          --config electron-builder.yml
+          -c.electronVersion=${{ steps.electron-version.outputs.version }}
+          -c.directories.output=release
+
+      - name: 上传打包产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: YunShu-DataRelay-portable-x64
+          path: release/*.exe
+          if-no-files-found: error
+          retention-days: 14

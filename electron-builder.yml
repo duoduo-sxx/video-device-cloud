@@ -1,0 +1,32 @@
+# 云枢 DataRelay · electron-builder 打包配置
+# 说明：本项目不引入 electron 依赖；打包时通过命令行
+#   -c.electronVersion=<npm view electron version>
+# 指定 Electron 版本，由 electron-builder 按镜像自行下载运行时。
+appId: com.duoduo.datarelay
+productName: 云枢DataRelay
+copyright: Copyright © 2026 duoduo-sxx
+
+directories:
+  output: release
+  buildResources: build
+
+# 仅打包前端产物 + 主进程入口 + 清单文件，避免 node_modules 全量进入安装包
+files:
+  - dist/**
+  - electron/**
+  - package.json
+
+asar: true
+compression: normal
+
+win:
+  icon: build/icon.ico
+  artifactName: YunShu-DataRelay-${version}-portable-${arch}.${ext}
+  target:
+    - target: portable
+      arch:
+        - x64
+
+portable:
+  artifactName: YunShu-DataRelay-${version}-portable-${arch}.${ext}
+  requestExecutionLevel: asInvoker
