@@ -50,31 +50,20 @@ jobs:
 
       - name: 读取 Electron 最新版本
         id: electron
-        shell: pwsh
+        shell: cmd
         run: |
-          $v = ("$(npm view electron version)").Trim()
-          Write-Host "Electron 版本：$v"
-          "version=$v" >> $env:GITHUB_OUTPUT
+          for /f "delims=" %%i in ('npm view electron version') do set "ELECTRON_VERSION=%%i"
+          echo Electron %ELECTRON_VERSION%
+          echo version=%ELECTRON_VERSION%>>"%GITHUB_OUTPUT%"
 
       - name: electron-builder 打包（Windows portable x64）
-        shell: pwsh
+        shell: cmd
         run: |
-          $out = "release-" + [guid]::NewGuid().ToString('N').Substring(0, 8)
-          Write-Host "输出目录：$out"
-          npx --yes electron-builder@25.1.8 --win portable --x64 --config electron-builder.yml `
-            -c.electronVersion=${{ steps.electron.outputs.version }} `
-            -c.npmRebuild=false `
-            -c.directories.output=$out 2>&1 | Tee-Object -FilePath eb-log.txt
-          $code = $LASTEXITCODE
-          if ($code -ne 0) {
-            Write-Host "electron-builder 失败（exit $code），最近日志如下："
-            Get-Content eb-log.txt -Tail 120 |
-              Where-Object { $_.Trim() -ne '' -and $_ -notmatch '^npm warn' } |
-              Select-Object -Last 25 |
-              ForEach-Object { Write-Host "::error::$_" }
-            exit $code
-          }
-          "OUTDIR=$out" >> $env:GITHUB_ENV
+          set "PACK_OUTPUT=release-%RANDOM%"
+          echo OUTDIR=%PACK_OUTPUT%>>"%GITHUB_ENV%"
+          npx --yes electron-builder@25.1.8 --win portable --x64 --config electron-builder.yml -c.electronVersion=${{ steps.electron.outputs.version }} -c.npmRebuild=false -c.directories.output=%PACK_OUTPUT% > eb-log.txt 2>&1
+          if errorlevel 1 ( type eb-log.txt & exit /b 1 )
+          dir /b "%PACK_OUTPUT%"
 
       - name: 失败时上传打包日志
         if: failure()
