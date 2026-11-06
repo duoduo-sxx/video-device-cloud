@@ -1,0 +1,37 @@
+# electron-builder 打包配置（Windows 便携版）
+# 打包命令示例：
+#   npx --yes electron-builder@latest --win portable --x64 --config electron-builder.yml -c.electronVersion=<版本>
+appId: com.duoduo.videoinsight
+productName: 视频智能化内容理解与分析系统
+copyright: Copyright © 2026
+
+directories:
+  output: release
+  buildResources: build
+
+# 仅打包构建产物与主进程入口，不包含任何源码与依赖
+files:
+  - dist/**
+  - electron-main.cjs
+  - package.json
+
+# 项目无原生依赖，跳过 native rebuild
+npmRebuild: false
+asar: true
+compression: maximum
+
+win:
+  icon: build/icon.ico
+  target:
+    - target: portable
+      arch:
+        - x64
+  artifactName: VideoInsight-Portable-${version}.${ext}
+
+portable:
+  # 便携版运行时的 SPLASH 无需，静默启动
+  artifactName: VideoInsight-Portable-${version}.${ext}
+
+electronLanguages:
+  - zh-CN
+  - en-US

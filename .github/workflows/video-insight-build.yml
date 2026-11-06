@@ -1,0 +1,54 @@
+name: 视频智能化内容理解与分析系统
+
+on:
+  push:
+    branches:
+      - video-insight
+  workflow_dispatch:
+
+jobs:
+  build-windows-portable:
+    name: 打包 Windows 便携版
+    runs-on: windows-latest
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 配置 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: 安装依赖
+        shell: cmd
+        env:
+          ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
+          NPM_CONFIG_ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
+          ELECTRON_BUILDER_BINARIES_MIRROR: https://npmmirror.com/mirrors/electron-builder-binaries/
+        run: npm install --no-audit --no-fund
+
+      - name: 构建前端产物
+        shell: cmd
+        run: npm run build
+
+      - name: 打包 Windows 便携版（electron-builder）
+        shell: pwsh
+        env:
+          ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
+          NPM_CONFIG_ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
+          ELECTRON_BUILDER_BINARIES_MIRROR: https://npmmirror.com/mirrors/electron-builder-binaries/
+        run: |
+          $electronVersion = (npm view electron version).Trim()
+          Write-Host "Electron 版本: $electronVersion"
+          $packOutput = "release-$([guid]::NewGuid().ToString('N').Substring(0,8))"
+          npx --yes electron-builder@latest --win portable --x64 --config electron-builder.yml "-c.electronVersion=$electronVersion" "-c.directories.output=$packOutput"
+          "PACK_OUTPUT=$packOutput" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
+      - name: 上传打包产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: VideoInsight-Windows-Portable
+          path: release-*/VideoInsight-Portable-*.exe
+          if-no-files-found: error
+          retention-days: 14
