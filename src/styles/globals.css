@@ -1,0 +1,214 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root,
+[data-theme='dark'] {
+  --bg-base: #070b12;
+  --bg-panel: #0e1622;
+  --bg-panel-2: #141f2e;
+  --bg-elevated: #18283a;
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --border-strong: rgba(255, 255, 255, 0.12);
+  --text-primary: #e8effa;
+  --text-secondary: #8fa3bf;
+  --text-muted: #5a6b85;
+  --brand: #22d3ee;
+  --brand-deep: #0ea5c6;
+  --brand-soft: rgba(34, 211, 238, 0.18);
+  --accent: #7c5cff;
+  --success: #34d399;
+  --warning: #fbbf24;
+  --danger: #f87171;
+  --info: #60a5fa;
+  --grid-line: rgba(255, 255, 255, 0.022);
+  --map-fill: rgba(34, 211, 238, 0.04);
+  --bg-canvas-rgb: 7 11 18;
+  --bg-panel-rgb: 14 22 34;
+  --bg-panel2-rgb: 20 31 46;
+  --bg-elevated-rgb: 24 40 58;
+  --text-primary-rgb: 232 239 250;
+  --text-secondary-rgb: 143 163 191;
+  --text-muted-rgb: 90 107 133;
+  --brand-rgb: 34 211 238;
+  --brand-deep-rgb: 14 165 198;
+  --accent-rgb: 124 92 255;
+  --success-rgb: 52 211 153;
+  --warning-rgb: 251 191 36;
+  --danger-rgb: 248 113 113;
+  --info-rgb: 96 165 250;
+  color-scheme: dark;
+}
+
+[data-theme='light'] {
+  --bg-base: #f5f7fb;
+  --bg-panel: #ffffff;
+  --bg-panel-2: #eef2f8;
+  --bg-elevated: #ffffff;
+  --border-subtle: rgba(15, 23, 42, 0.07);
+  --border-strong: rgba(15, 23, 42, 0.13);
+  --text-primary: #0f172a;
+  --text-secondary: #55637a;
+  --text-muted: #8895a8;
+  --brand: #0891b2;
+  --brand-deep: #0e7490;
+  --brand-soft: rgba(8, 145, 178, 0.14);
+  --accent: #6d4aff;
+  --success: #059669;
+  --warning: #b45309;
+  --danger: #dc2626;
+  --info: #2563eb;
+  --grid-line: rgba(15, 23, 42, 0.038);
+  --map-fill: rgba(8, 145, 178, 0.05);
+  --bg-canvas-rgb: 245 247 251;
+  --bg-panel-rgb: 255 255 255;
+  --bg-panel2-rgb: 238 242 248;
+  --bg-elevated-rgb: 255 255 255;
+  --text-primary-rgb: 15 23 42;
+  --text-secondary-rgb: 85 99 122;
+  --text-muted-rgb: 136 149 168;
+  --brand-rgb: 8 145 178;
+  --brand-deep-rgb: 14 116 144;
+  --accent-rgb: 109 74 255;
+  --success-rgb: 5 150 105;
+  --warning-rgb: 180 83 9;
+  --danger-rgb: 220 38 38;
+  --info-rgb: 37 99 235;
+  color-scheme: light;
+}
+
+* {
+  border-color: var(--border-subtle);
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg-base);
+  color: var(--text-primary);
+  font-family: 'PingFang SC', 'HarmonyOS Sans SC', 'Microsoft YaHei', system-ui, sans-serif;
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(140, 160, 190, 0.22);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(140, 160, 190, 0.4);
+}
+
+@layer components {
+  .panel {
+    @apply bg-panel border border-strong rounded-panel shadow-panel;
+  }
+  .panel-hd {
+    @apply flex items-center justify-between px-4 h-11 border-b border-subtle;
+  }
+  .panel-hd-title {
+    @apply flex items-center gap-2 text-sm font-medium text-ink;
+  }
+  .panel-hd-bar {
+    @apply w-[3px] h-3 rounded-sm bg-brand;
+  }
+  .focus-ring:focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 1px;
+  }
+  .num {
+    font-family: 'JetBrains Mono', 'DIN Alternate', ui-monospace, monospace;
+    font-variant-numeric: tabular-nums;
+  }
+  .skeleton {
+    @apply relative overflow-hidden bg-panel2 rounded-ctrl;
+  }
+  .skeleton::after {
+    content: '';
+    @apply absolute inset-0;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.05), transparent);
+    transform: translateX(-100%);
+    animation: shimmer 1.6s infinite;
+  }
+  .kbd {
+    @apply inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded border border-strong bg-panel2 text-2xs text-ink-soft font-mono;
+  }
+  .hairline {
+    background-image: linear-gradient(var(--border-subtle), var(--border-subtle));
+    background-size: 100% 1px;
+    background-repeat: no-repeat;
+  }
+}
+
+.app-grid-bg {
+  background-image: linear-gradient(var(--grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+.ambient::before,
+.ambient::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  pointer-events: none;
+}
+.ambient::before {
+  width: 520px;
+  height: 520px;
+  background: rgba(34, 211, 238, 0.1);
+  top: -180px;
+  left: -120px;
+}
+.ambient::after {
+  width: 460px;
+  height: 460px;
+  background: rgba(124, 92, 255, 0.09);
+  bottom: -160px;
+  right: -100px;
+}
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes waveBar {
+  0% {
+    transform: scaleY(0.25);
+  }
+  100% {
+    transform: scaleY(1);
+  }
+}
+
+.wave-bar {
+  animation: waveBar 0.55s ease-in-out infinite alternate;
+  transform-origin: center;
+  border-radius: 999px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

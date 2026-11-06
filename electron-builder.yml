@@ -1,0 +1,49 @@
+# electron-builder 打包配置
+#
+# 本项目刻意 **不** 在 package.json 中声明 electron / electron-builder 依赖，
+# electron 版本由打包命令通过 `-c.electronVersion=<version>` 注入，
+# 例如：
+#   npx --yes electron-builder@latest --win portable --x64 \
+#     --config electron-builder.yml -c.electronVersion=38.2.1
+#
+# 因此 `npm install` 不会拉取 electron（国内网络友好），
+# 打包时由 electron-builder 依据 ELECTRON_MIRROR 下载对应运行时。
+
+appId: com.duoduo.iceplatform
+productName: 沉浸式智能控制人机交互系统
+copyright: Copyright © 2026 沉浸式智能控制人机交互系统
+
+directories:
+  output: release
+  buildResources: build
+
+# 只打包运行期真正需要的文件；前端依赖已由 Vite 打进 dist/
+# 排除 node_modules 可避免把 react/echarts 等重复塞进 asar
+files:
+  - dist/**/*
+  - electron/**/*
+  - build/icon.png
+  - package.json
+  - '!**/*.map'
+  - '!node_modules/**/*'
+
+asar: true
+# 无原生模块，跳过 rebuild 以缩短打包时间
+npmRebuild: false
+buildDependenciesFromSource: false
+
+win:
+  icon: build/icon.ico
+  artifactName: ImmersionControl-${version}-portable-${arch}.${ext}
+  target:
+    - target: portable
+      arch:
+        - x64
+
+portable:
+  artifactName: ImmersionControl-${version}-portable-${arch}.${ext}
+  # 启动时解压到固定的临时目录，二次启动更快
+  unpackDirName: true
+
+# 不启用自动更新（纯离线部署）
+publish: null

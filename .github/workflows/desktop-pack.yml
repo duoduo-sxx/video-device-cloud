@@ -1,0 +1,82 @@
+name: 沉浸式智能控制人机交互系统
+
+# 打包 Windows 便携版（portable x64）
+# 说明：electron 不是项目依赖，运行时版本由 npm registry 解析后
+#      通过 -c.electronVersion 注入，镜像变量保证国内下载速度。
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feature/ice-platform-desktop
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: desktop-pack-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
+  NPM_CONFIG_ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
+  ELECTRON_BUILDER_BINARIES_MIRROR: https://npmmirror.com/mirrors/electron-builder-binaries/
+
+jobs:
+  windows-portable:
+    name: Windows 便携版 x64
+    runs-on: windows-latest
+    timeout-minutes: 40
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 配置 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: 安装依赖
+        run: npm ci
+
+      - name: 构建前端产物
+        run: npm run build
+
+      - name: 校验构建产物
+        shell: cmd
+        run: |
+          if not exist "dist\index.html" (
+            echo [ERROR] dist\index.html missing
+            exit /b 1
+          )
+          echo dist build OK
+
+      - name: 打包 Windows 便携版
+        shell: cmd
+        run: |
+          for /f "delims=" %%i in ('npm view electron version') do set "ELECTRON_VERSION=%%i"
+          if "%ELECTRON_VERSION%"=="" (
+            echo [ERROR] Unable to resolve electron version
+            exit /b 1
+          )
+          echo Electron version: %ELECTRON_VERSION%
+          set "PACK_OUTPUT=release-retry-%RANDOM%"
+          echo Output directory: %PACK_OUTPUT%
+          npx --yes electron-builder@latest --win portable --x64 --config electron-builder.yml -c.electronVersion=%ELECTRON_VERSION% -c.directories.output=%PACK_OUTPUT%
+          if errorlevel 1 exit /b 1
+
+      - name: 列出产物
+        shell: cmd
+        run: dir /s /b release-retry-*
+
+      - name: 上传便携版产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: immersive-control-windows-portable-x64
+          path: release-retry-*/*.exe
+          if-no-files-found: error
+          retention-days: 15

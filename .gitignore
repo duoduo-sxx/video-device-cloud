@@ -1,0 +1,31 @@
+# 依赖
+node_modules/
+
+# 构建产物
+dist/
+dist2/
+dist3/
+release/
+release-*/
+*.tsbuildinfo
+
+# 图标中间产物（仅保留 build/icon.svg / icon.png / icon.ico）
+build/png/
+
+# 本地验证与临时文件
+.smoke/
+.tmp/
+*.log
+*.timestamp-*.mjs
+.DS_Store
+Thumbs.db
+
+# 编辑器
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# 环境变量
+.env
+.env.*
+!.env.example
