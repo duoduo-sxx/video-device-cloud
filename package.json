@@ -1,0 +1,38 @@
+{
+  "name": "mediaforge",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "多媒体音视频智能处理系统（MediaForge 智媒工场）· 纯前端演示版，可打包为桌面端",
+  "author": {
+    "name": "duoduo-sxx"
+  },
+  "main": "electron/main.cjs",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build && node scripts/inline.cjs",
+    "build:only": "vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "test:routes": "node scripts/test-routes.cjs",
+    "pack:win": "npx --yes electron-builder@latest --win portable --x64 --config electron-builder.yml",
+    "icon:ico": "node scripts/make-ico.cjs build/icon.ico build/icon.png"
+  },
+  "dependencies": {
+    "@ant-design/icons": "^5.5.1",
+    "antd": "^5.21.6",
+    "dayjs": "^1.11.13",
+    "echarts": "^5.5.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.27.0",
+    "zustand": "^5.0.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.3",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.10"
+  }
+}

@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="MediaForge">
+  <defs>
+    <linearGradient id="tile" x1="40" y1="24" x2="472" y2="488" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#6C7BFF"/>
+      <stop offset="0.52" stop-color="#6C5CE7"/>
+      <stop offset="1" stop-color="#2E9BFF"/>
+    </linearGradient>
+    <linearGradient id="sheen" x1="256" y1="0" x2="256" y2="330" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="play" x1="200" y1="150" x2="400" y2="370" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#EAEEFF"/>
+    </linearGradient>
+    <filter id="soft" x="-40%" y="-40%" width="180%" height="180%">
+      <feDropShadow dx="0" dy="10" stdDeviation="14" flood-color="#1B1140" flood-opacity="0.32"/>
+    </filter>
+  </defs>
+
+  <rect x="0" y="0" width="512" height="512" rx="118" fill="url(#tile)"/>
+  <rect x="0" y="0" width="512" height="512" rx="118" fill="url(#sheen)"/>
+  <rect x="1.5" y="1.5" width="509" height="509" rx="116.5" fill="none" stroke="#FFFFFF" stroke-opacity="0.22" stroke-width="3"/>
+
+  <!-- 播放三角（圆角） -->
+  <g filter="url(#soft)">
+    <path d="M204 156 L392 250 L204 344 Z"
+          fill="url(#play)" stroke="url(#play)" stroke-width="36"
+          stroke-linejoin="round" stroke-linecap="round"/>
+  </g>
+
+  <!-- AI 星芒 -->
+  <g fill="#FFFFFF">
+    <path d="M402 92 l12 32 32 12 -32 12 -12 32 -12 -32 -32 -12 32 -12 z" opacity="0.95"/>
+    <circle cx="346" cy="80" r="8" opacity="0.65"/>
+  </g>
+</svg>

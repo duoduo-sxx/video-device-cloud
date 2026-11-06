@@ -1,0 +1,35 @@
+appId: com.mediaforge.desktop
+productName: MediaForge
+copyright: Copyright © 2026 MediaForge
+
+directories:
+  buildResources: build
+  output: release
+
+# 只把构建产物 + 主进程 + 清单打进包；渲染层资源已由 Vite 打包进 dist
+files:
+  - dist/**/*
+  - electron/**/*
+  - build/icon.png
+  - package.json
+  - '!**/*.map'
+  - '!**/node_modules/**/*'
+
+asar: true
+compression: normal
+removePackageScripts: true
+
+win:
+  target:
+    - target: portable
+      arch:
+        - x64
+  icon: build/icon.ico
+  artifactName: MediaForge-${version}-portable-${arch}.${ext}
+  legalTrademarks: MediaForge
+  requestedExecutionLevel: asInvoker
+
+portable:
+  artifactName: MediaForge-${version}-portable-${arch}.${ext}
+  requestExecutionLevel: user
+  unpackDirName: MediaForge

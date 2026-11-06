@@ -1,0 +1,63 @@
+name: 多媒体音视频智能处理系统
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+env:
+  ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
+  NPM_CONFIG_ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
+  ELECTRON_BUILDER_BINARIES_MIRROR: https://npmmirror.com/mirrors/electron-builder-binaries/
+
+jobs:
+  build-windows-portable:
+    name: 打包 Windows 便携版
+    runs-on: windows-latest
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 安装 Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: 安装依赖
+        run: npm install --no-audit --no-fund
+
+      - name: 构建前端产物
+        run: npm run build
+
+      - name: 读取最新 Electron 版本
+        id: electron
+        shell: bash
+        run: echo "version=$(npm view electron version)" >> "$GITHUB_OUTPUT"
+
+      - name: electron-builder 打包（win portable x64）
+        run: >-
+          npx --yes electron-builder@latest
+          --win portable --x64
+          --config electron-builder.yml
+          -c.electronVersion=${{ steps.electron.outputs.version }}
+          -c.directories.output=release
+
+      - name: 收集产物信息
+        shell: bash
+        run: |
+          echo "### 打包产物" >> "$GITHUB_STEP_SUMMARY"
+          ls -lh release/*.exe || true
+          du -sh release || true
+
+      - name: 上传产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: MediaForge-Windows-Portable
+          path: release/*.exe
+          if-no-files-found: error
+          retention-days: 14
