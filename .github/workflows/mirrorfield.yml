@@ -1,0 +1,82 @@
+name: 镜域 MirrorField · 三维复刻与 MR 虚实交互系统
+
+# 手动触发，或打 v* 标签时自动打包
+on:
+  workflow_dispatch:
+    inputs:
+      electron_version:
+        description: 'Electron 版本（留空自动取 npm 最新版）'
+        required: false
+        default: ''
+  push:
+    tags:
+      - 'v*'
+
+concurrency:
+  group: mirrorfield-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
+  NPM_CONFIG_ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
+  ELECTRON_BUILDER_BINARIES_MIRROR: https://npmmirror.com/mirrors/electron-builder-binaries/
+  PROJECT_DIR: mirrorfield
+
+jobs:
+  build-windows-portable:
+    name: Windows 便携版（x64 / portable）
+    runs-on: windows-latest
+    timeout-minutes: 40
+
+    defaults:
+      run:
+        working-directory: mirrorfield
+
+    steps:
+      - name: 拉取代码
+        uses: actions/checkout@v4
+
+      - name: 准备 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: 安装依赖
+        run: npm install --no-audit --no-fund
+
+      - name: 构建前端
+        run: npm run build
+
+      - name: 解析 Electron 版本
+        id: electron
+        shell: bash
+        run: |
+          if [ -n "${{ github.event.inputs.electron_version }}" ]; then
+            VER="${{ github.event.inputs.electron_version }}"
+          else
+            VER="$(npm view electron version)"
+          fi
+          echo "version=$VER" >> "$GITHUB_OUTPUT"
+          echo "Electron version: $VER"
+
+      - name: 打包 Windows 便携版
+        run: >
+          npx --yes electron-builder@latest
+          --win portable --x64
+          --config electron-builder.yml
+          -c.electronVersion=${{ steps.electron.outputs.version }}
+          -c.directories.output=release-ci
+
+      - name: 校验产物
+        shell: bash
+        run: |
+          ls -lh release-ci
+          test -n "$(find release-ci -maxdepth 1 -name '*.exe' -print -quit)"
+
+      - name: 上传安装包
+        uses: actions/upload-artifact@v4
+        with:
+          name: MirrorField-portable-x64
+          path: mirrorfield/release-ci/*.exe
+          if-no-files-found: error
+          retention-days: 30

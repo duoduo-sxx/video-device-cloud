@@ -1,0 +1,41 @@
+# electron-builder 配置（Windows 便携版）
+# 用法：npx --yes electron-builder@latest --win portable --x64 --config electron-builder.yml
+# 项目不声明 electron / electron-builder 依赖，运行时版本由命令行 -c.electronVersion 传入。
+
+appId: com.mirrorfield.desktop
+productName: MirrorField
+
+directories:
+  buildResources: build
+  output: release
+
+# 只打包构建产物与主进程脚本，源码、node_modules 不进包
+files:
+  - dist/**/*
+  - electron/**/*
+  - package.json
+  - '!**/*.map'
+  - '!**/*.md'
+
+asar: true
+compression: normal
+npmRebuild: false
+
+# Electron 运行时下载镜像（国内网络可直连；CI 中另由环境变量覆盖）
+electronDownload:
+  mirror: https://npmmirror.com/mirrors/electron/
+
+win:
+  target:
+    - target: portable
+      arch:
+        - x64
+  icon: build/icon.ico
+  artifactName: ${productName}-${version}-portable-${arch}.${ext}
+  requestedExecutionLevel: asInvoker
+
+portable:
+  # 便携版单文件 exe，双击即用，不写注册表
+  artifactName: ${productName}-${version}-portable-${arch}.${ext}
+  unicode: true
+  requestExecutionLevel: user

@@ -1,0 +1,37 @@
+{
+  "name": "mirrorfield",
+  "private": true,
+  "version": "1.0.0",
+  "description": "镜域 MirrorField · 三维复刻与 MR 虚实交互系统及技术服务",
+  "author": "duoduo-sxx",
+  "license": "UNLICENSED",
+  "type": "module",
+  "main": "electron/main.cjs",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@ant-design/icons": "5.5.1",
+    "antd": "5.21.6",
+    "dayjs": "1.11.13",
+    "echarts": "5.5.1",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "react-router-dom": "6.26.2",
+    "three": "0.169.0",
+    "zustand": "4.5.5"
+  },
+  "devDependencies": {
+    "@types/react": "18.3.10",
+    "@types/react-dom": "18.3.0",
+    "@types/three": "0.169.0",
+    "@vitejs/plugin-react": "4.3.2",
+    "autoprefixer": "10.4.20",
+    "postcss": "8.4.47",
+    "tailwindcss": "3.4.13",
+    "typescript": "5.6.2",
+    "vite": "5.4.8"
+  }
+}

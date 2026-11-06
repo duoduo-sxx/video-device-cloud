@@ -1,0 +1,49 @@
+# 依赖
+node_modules/
+_deps/
+_npmcache/
+
+# 构建产物
+mirrorfield/dist/
+mirrorfield/release/
+mirrorfield/release-*/
+mirrorfield/release-retry-*/
+mirrorfield/release-ci/
+
+# 图标中间文件（只保留 icon.ico / icon.png）
+mirrorfield/build/icon-src.png
+mirrorfield/build/icon-[0-9]*.png
+mirrorfield/build/App_icon_*.png
+
+# 工具缓存
+mirrorfield/vite.config.ts.timestamp-*.mjs
+_tmp/
+*.log
+
+# 系统 / 编辑器
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# 本地环境
+.env
+.env.local
+
+# 沙箱遗留临时文件
+/4wkzm_xd
+/8co7i_np
+/99_l7tfo
+/_uclwd_1
+/av0um9xb
+/b2te5jk7
+/hemgbd74
+/m0ounoqt
+/t_3s0a9i
+/taq07r3_
+/tgx8k4uw
+/uorbsqay
+/v_pwkwn7
+zz_del_test
+zz_nodedel
+.workbuddy/
