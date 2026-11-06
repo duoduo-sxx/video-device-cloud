@@ -25,10 +25,10 @@ jobs:
       - name: 检出代码
         uses: actions/checkout@v4
 
-      - name: 安装 Node.js 20
+      - name: 安装 Node.js 24
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           cache: npm
 
       - name: 安装依赖
@@ -55,12 +55,18 @@ jobs:
             --config electron-builder.yml `
             -c.electronVersion=$env:ELECTRON_VERSION `
             -c.directories.output=$outDir
-          "OUT_DIR=$outDir" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          Write-Host "=== 输出目录内容 ==="
+          Get-ChildItem -Recurse $outDir | ForEach-Object { $_.FullName }
+          if (-not (Get-ChildItem "$outDir" -Filter *.exe -ErrorAction SilentlyContinue)) {
+            throw "打包完成但未生成 exe：$outDir"
+          }
 
       - name: 上传打包产物
         uses: actions/upload-artifact@v4
         with:
           name: CloudFlow-Windows-Portable-x64
-          path: ${{ env.OUT_DIR }}/*.exe
+          # 用通配符匹配，避免依赖 GITHUB_ENV 传递（Windows PowerShell 的
+          # Out-File -Encoding utf8 会写 BOM，污染变量名）
+          path: release-*/**/*.exe
           if-no-files-found: error
           retention-days: 14
