@@ -61,10 +61,25 @@ jobs:
         run: |
           $out = "release-" + [guid]::NewGuid().ToString('N').Substring(0, 8)
           Write-Host "输出目录：$out"
-          npx --yes electron-builder@latest --win portable --x64 --config electron-builder.yml `
+          npx --yes electron-builder@25.1.8 --win portable --x64 --config electron-builder.yml `
             -c.electronVersion=${{ steps.electron.outputs.version }} `
-            -c.directories.output=$out
+            -c.npmRebuild=false `
+            -c.directories.output=$out 2>&1 | Tee-Object -FilePath eb-log.txt
+          $code = $LASTEXITCODE
+          if ($code -ne 0) {
+            Write-Host "electron-builder 失败（exit $code），最近 60 行日志如下："
+            Get-Content eb-log.txt -Tail 60 | ForEach-Object { Write-Host "::error::$_" }
+            exit $code
+          }
           "OUTDIR=$out" >> $env:GITHUB_ENV
+
+      - name: 失败时上传打包日志
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: electron-builder-日志
+          path: eb-log.txt
+          if-no-files-found: ignore
 
       - name: 上传打包产物
         uses: actions/upload-artifact@v4
