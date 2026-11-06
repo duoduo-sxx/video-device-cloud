@@ -17,9 +17,11 @@ concurrency:
   cancel-in-progress: true
 
 env:
+  # Electron 运行时走镜像，避免直连 GitHub Releases 超时
   ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
   NPM_CONFIG_ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
-  ELECTRON_BUILDER_BINARIES_MIRROR: https://npmmirror.com/mirrors/electron-builder-binaries/
+  # electron-builder 的 nsis/winCodeSign 等二进制约 60MB：CI 跑在 GitHub 机房，直连更快，
+  # 因此这里不覆盖 ELECTRON_BUILDER_BINARIES_MIRROR；国内本地打包由 pack-win.bat 设置。
   PROJECT_DIR: mirrorfield
 
 jobs:
