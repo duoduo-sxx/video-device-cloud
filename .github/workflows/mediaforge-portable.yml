@@ -40,12 +40,27 @@ jobs:
         run: echo "version=$(npm view electron version)" >> "$GITHUB_OUTPUT"
 
       - name: electron-builder 打包（win portable x64）
-        run: >-
-          npx --yes electron-builder@latest
-          --win portable --x64
-          --config electron-builder.yml
-          -c.electronVersion=${{ steps.electron.outputs.version }}
-          -c.directories.output=release
+        id: pack
+        shell: bash
+        run: |
+          set -o pipefail
+          npx --yes electron-builder@latest \
+            --win portable --x64 \
+            --config electron-builder.yml \
+            -c.electronVersion=${{ steps.electron.outputs.version }} \
+            -c.directories.output=release 2>&1 | tee pack.log
+
+      - name: 失败诊断写入 Summary
+        if: failure()
+        shell: bash
+        run: |
+          {
+            echo "### electron-builder 失败诊断"
+            echo ""
+            echo '```text'
+            tail -n 80 pack.log || echo "(未找到 pack.log)"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: 收集产物信息
         shell: bash
