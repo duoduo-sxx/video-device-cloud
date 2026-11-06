@@ -2,7 +2,8 @@
 #
 # 打包命令（无需把 electron / electron-builder 装进项目依赖）：
 #   npx --yes electron-builder@latest --win portable --x64 --config electron-builder.yml -c.electronVersion=<版本>
-# 本地 Windows 一键打包见根目录 pack-win.bat；云端打包见 .github/workflows/build-windows.yml
+# 本地 Windows 一键打包见根目录 pack-win.bat；云端打包见 .github/workflows/nexusplay-console.yml
+# 应用图标由 scripts/make-icon.py 自绘生成（build/icon.ico，16~256 七个尺寸），不使用 Electron 默认图标
 #
 # 产物：release/NexusPlay 游戏开发管理平台-V<version>-便携版.exe
 #   免安装单文件，双击即可运行（首次启动会自解压到临时目录，通常 1~3 秒）

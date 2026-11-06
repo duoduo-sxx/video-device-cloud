@@ -36,12 +36,24 @@ npx --yes electron-builder@latest --win portable --x64 --config electron-builder
 
 ### 方式二：GitHub Actions 云端打包
 
-推送到 `nexusplay-console` 分支或打 `v*` 标签即会自动触发
-`.github/workflows/build-windows.yml`，在 `windows-latest` 上完成构建与打包：
+推送到 `feat/nexusplay-console` 分支或打 `v*` 标签即会自动触发
+`.github/workflows/nexusplay-console.yml`（Actions 里显示为「跨平台网页游戏综合开发管理系统」），
+在 `windows-latest` 上完成构建与打包：
 
 - 产物在 Actions 页面的 **Artifacts** 里下载（保留 30 天）
 - 打 tag 时会自动创建 GitHub Release 并附带 exe
 - 也支持在 Actions 页手动 `Run workflow`
+
+### 应用图标
+
+图标是本项目自绘生成的，**不使用 Electron 默认图标**：
+
+```bash
+python3 scripts/make-icon.py build   # 需要 Pillow
+```
+
+输出 `build/icon.png`（512×512）与 `build/icon.ico`（16/24/32/48/64/128/256 七个尺寸），
+`electron-builder.yml` 的 `win.icon` 指向后者，因此 exe、任务栏、文件属性里显示的都是自绘图标。
 
 ### 产物
 
@@ -59,6 +71,7 @@ src/                 前端源码（React 18 + TypeScript + Vite + Ant Design 5�
   pages/             13 个业务模块页面
 desktop/             桌面端主进程（不含任何 npm 依赖）
 scripts/pack-win.mjs 打包脚本
+scripts/make-icon.py 应用图标生成脚本（自绘，不依赖 Electron）
 electron-builder.yml 打包配置
 build/               应用图标（icon.ico / icon.png）
 ```

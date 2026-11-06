@@ -9,3 +9,4 @@ release-retry-*
 .vscode/*
 !.vscode/extensions.json
 build-pack*.log
+build/preview-*.png
