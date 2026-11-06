@@ -8,10 +8,10 @@ on:
         description: 'Electron 版本（留空 = 自动取最新稳定版）'
         required: false
         default: ''
-  # 打 v* 标签时自动打包
+  # 打项目专属标签时自动打包（用前缀避免与同仓库其他项目的 v* 标签互相误触发）
   push:
     tags:
-      - 'v*'
+      - 'xh-chain-v*'
 
 jobs:
   build-windows-portable:
