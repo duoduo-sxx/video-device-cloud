@@ -3,7 +3,7 @@
  * ---------------------------------------------------------------------------
  * 把 Vite 构建出的 dist（打包后位于 resources/renderer）以 http://127.0.0.1:<port>
  * 的形式提供给渲染进程，替代 file://：
- *   - 固定端口 → origin 稳定，用户在本地的数据改动可持久保留
+ *   - 固定端口 → origin 稳定，localStorage 里的任务/素材数据可跨启动持久保留
  *   - 端口被占用时自动退回随机端口，保证一定能启动
  *
  * 单独成文件便于在普通 Node 环境下直接做冒烟测试（不依赖 Electron）。
@@ -24,10 +24,12 @@ const MIME_TYPES = {
   '.json': 'application/json; charset=utf-8',
   '.map': 'application/json; charset=utf-8',
   '.mjs': 'text/javascript; charset=utf-8',
+  '.mp4': 'video/mp4',
   '.png': 'image/png',
   '.svg': 'image/svg+xml',
   '.ttf': 'font/ttf',
   '.txt': 'text/plain; charset=utf-8',
+  '.webm': 'video/webm',
   '.webp': 'image/webp',
   '.woff': 'font/woff',
   '.woff2': 'font/woff2'

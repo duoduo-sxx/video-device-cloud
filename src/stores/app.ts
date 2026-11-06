@@ -1,108 +1,71 @@
 import { defineStore } from 'pinia'
 import { ref, watch } from 'vue'
 
-export interface TabItem {
-  path: string
+export type ToastType = 'success' | 'error' | 'info' | 'warning'
+
+export interface Toast {
+  id: number
+  type: ToastType
   title: string
-  closable: boolean
+  desc?: string
 }
 
-const APP_KEY = 'vc_app_state'
-
-interface AppState {
-  collapsed: boolean
-  theme: 'light' | 'dark'
-  watermark: boolean
-  showTabs: boolean
-  density: 'default' | 'small' | 'large'
-}
-
-function read(): AppState {
-  try {
-    const raw = localStorage.getItem(APP_KEY)
-    if (raw) return { collapsed: false, theme: 'light', watermark: true, showTabs: true, density: 'default', ...JSON.parse(raw) }
-  } catch {
-    /* ignore */
-  }
-  return { collapsed: false, theme: 'light', watermark: true, showTabs: true, density: 'default' }
-}
+const THEME_KEY = 'vidclear.theme'
+const SIDEBAR_KEY = 'vidclear.sidebar'
 
 export const useAppStore = defineStore('app', () => {
-  const initial = read()
-  const sidebarCollapsed = ref(initial.collapsed)
-  const theme = ref<'light' | 'dark'>(initial.theme)
-  const watermark = ref(initial.watermark)
-  const showTabs = ref(initial.showTabs)
-  const density = ref<'default' | 'small' | 'large'>(initial.density)
-  const visitedTabs = ref<TabItem[]>([])
-  const globalSearchVisible = ref(false)
+  const storedTheme = (typeof localStorage !== 'undefined' && localStorage.getItem(THEME_KEY)) || 'dark'
+  const theme = ref<'dark' | 'light'>(storedTheme === 'light' ? 'light' : 'dark')
+  const sidebarCollapsed = ref(localStorage.getItem(SIDEBAR_KEY) === '1')
+  const toasts = ref<Toast[]>([])
+  const commandOpen = ref(false)
+  const notifOpen = ref(false)
+  const uploadPanelOpen = ref(false)
 
-  function persist(): void {
-    const state: AppState = {
-      collapsed: sidebarCollapsed.value,
-      theme: theme.value,
-      watermark: watermark.value,
-      showTabs: showTabs.value,
-      density: density.value
-    }
-    localStorage.setItem(APP_KEY, JSON.stringify(state))
+  function applyTheme() {
+    document.documentElement.dataset.theme = theme.value
   }
 
-  function toggleSidebar(): void {
+  function toggleTheme() {
+    theme.value = theme.value === 'dark' ? 'light' : 'dark'
+  }
+
+  function toggleSidebar() {
     sidebarCollapsed.value = !sidebarCollapsed.value
   }
 
-  function setTheme(t: 'light' | 'dark'): void {
-    theme.value = t
+  let toastSeq = 0
+  function toast(type: ToastType, title: string, desc?: string) {
+    const id = ++toastSeq
+    toasts.value.push({ id, type, title, desc })
+    window.setTimeout(() => {
+      toasts.value = toasts.value.filter((t) => t.id !== id)
+    }, 3200)
+  }
+
+  function dismissToast(id: number) {
+    toasts.value = toasts.value.filter((t) => t.id !== id)
+  }
+
+  watch(theme, (v) => {
+    localStorage.setItem(THEME_KEY, v)
     applyTheme()
-  }
-
-  function applyTheme(): void {
-    const html = document.documentElement
-    if (theme.value === 'dark') html.classList.add('dark')
-    else html.classList.remove('dark')
-  }
-
-  function addTab(tab: TabItem): void {
-    if (!tab.title) return
-    const exists = visitedTabs.value.find((t) => t.path === tab.path)
-    if (!exists) visitedTabs.value.push(tab)
-  }
-
-  function removeTab(path: string): string | null {
-    const idx = visitedTabs.value.findIndex((t) => t.path === path)
-    if (idx < 0) return null
-    visitedTabs.value.splice(idx, 1)
-    const next = visitedTabs.value[idx] || visitedTabs.value[idx - 1]
-    return next ? next.path : '/dashboard'
-  }
-
-  function closeOtherTabs(path: string): void {
-    visitedTabs.value = visitedTabs.value.filter((t) => t.path === path || !t.closable)
-  }
-
-  function toggleSearch(visible?: boolean): void {
-    globalSearchVisible.value = visible ?? !globalSearchVisible.value
-  }
-
-  watch([sidebarCollapsed, theme, watermark, showTabs, density], persist)
+  })
+  watch(sidebarCollapsed, (v) => localStorage.setItem(SIDEBAR_KEY, v ? '1' : '0'))
 
   applyTheme()
 
   return {
-    sidebarCollapsed,
     theme,
-    watermark,
-    showTabs,
-    density,
-    visitedTabs,
-    globalSearchVisible,
+    sidebarCollapsed,
+    toasts,
+    commandOpen,
+    notifOpen,
+    uploadPanelOpen,
+    toggleTheme,
     toggleSidebar,
-    setTheme,
-    applyTheme,
-    addTab,
-    removeTab,
-    closeOtherTabs,
-    toggleSearch
+    toast,
+    dismissToast,
+    applyTheme
   }
 })

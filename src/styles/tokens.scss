@@ -1,0 +1,84 @@
+:root {
+  --bg-app: #0b0e14;
+  --bg-sidebar: #0e1219;
+  --bg-panel: #121724;
+  --bg-card: #161b26;
+  --bg-card-hover: #1c2230;
+  --bg-inset: #0d1118;
+  --bg-elevated: #1a2030;
+
+  --border: #232b3a;
+  --border-strong: #2e3850;
+  --border-subtle: #1a2030;
+
+  --primary: #4f7cff;
+  --primary-hover: #6a90ff;
+  --primary-soft: rgba(79, 124, 255, 0.12);
+  --primary-soft-2: rgba(79, 124, 255, 0.2);
+  --success: #22d3a6;
+  --success-soft: rgba(34, 211, 166, 0.12);
+  --warning: #f5a524;
+  --warning-soft: rgba(245, 165, 36, 0.12);
+  --danger: #f4526b;
+  --danger-soft: rgba(244, 82, 107, 0.12);
+  --purple: #a78bfa;
+  --purple-soft: rgba(167, 139, 250, 0.12);
+
+  --text-1: #e8ecf4;
+  --text-2: #98a2b8;
+  --text-3: #5e687c;
+  --text-inverse: #0b0e14;
+
+  --gradient: linear-gradient(135deg, #4f7cff 0%, #22d3a6 100%);
+  --gradient-soft: linear-gradient(135deg, rgba(79, 124, 255, 0.16) 0%, rgba(34, 211, 166, 0.1) 100%);
+
+  --shadow-pop: 0 12px 40px rgba(0, 0, 0, 0.5);
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.25);
+
+  --r-card: 12px;
+  --r-btn: 8px;
+  --r-input: 8px;
+  --r-pill: 999px;
+
+  --sidebar-w: 232px;
+  --sidebar-w-collapsed: 64px;
+  --header-h: 56px;
+
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+  --font-mono: 'SF Mono', 'JetBrains Mono', Menlo, Consolas, monospace;
+}
+
+:root[data-theme='light'] {
+  --bg-app: #f6f8fb;
+  --bg-sidebar: #ffffff;
+  --bg-panel: #ffffff;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f4f7fc;
+  --bg-inset: #eef2f7;
+  --bg-elevated: #ffffff;
+
+  --border: #e2e8f2;
+  --border-strong: #cfd8e6;
+  --border-subtle: #eef2f7;
+
+  --primary: #3b6bf5;
+  --primary-hover: #2f5ce0;
+  --primary-soft: rgba(59, 107, 245, 0.08);
+  --primary-soft-2: rgba(59, 107, 245, 0.16);
+  --success: #0e9f7e;
+  --success-soft: rgba(14, 159, 126, 0.1);
+  --warning: #b97410;
+  --warning-soft: rgba(185, 116, 16, 0.1);
+  --danger: #d93a52;
+  --danger-soft: rgba(217, 58, 82, 0.09);
+  --purple: #7c5cf0;
+  --purple-soft: rgba(124, 92, 240, 0.1);
+
+  --text-1: #12202e;
+  --text-2: #5b6a80;
+  --text-3: #8b98ab;
+  --text-inverse: #ffffff;
+
+  --shadow-pop: 0 12px 40px rgba(20, 40, 80, 0.12);
+  --shadow-sm: 0 2px 8px rgba(20, 40, 80, 0.06);
+}

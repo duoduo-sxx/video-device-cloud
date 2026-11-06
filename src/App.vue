@@ -1,45 +1,63 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useAppStore } from '@/stores/app'
-import { useUserStore } from '@/stores/user'
+import AppSidebar from '@/components/layout/AppSidebar.vue'
+import AppHeader from '@/components/layout/AppHeader.vue'
+import CommandPalette from '@/components/layout/CommandPalette.vue'
+import NotificationDrawer from '@/components/layout/NotificationDrawer.vue'
+import ToastHost from '@/components/ui/ToastHost.vue'
+import { useTaskSimulator } from '@/composables/useTaskSimulator'
 
-const app = useAppStore()
-const user = useUserStore()
-
-const watermarkText = computed(() => `${user.nickname} · ${user.userInfo?.tenantName || '平台'}`)
+useTaskSimulator()
 </script>
 
 <template>
-  <router-view />
-  <div v-if="app.watermark && user.isLogin" class="vc-watermark">
-    <div class="vc-watermark__inner">
-      <span v-for="i in 48" :key="i">{{ watermarkText }}</span>
+  <div class="shell">
+    <AppSidebar />
+    <div class="main">
+      <AppHeader />
+      <main class="content">
+        <router-view v-slot="{ Component }">
+          <transition name="route" mode="out-in">
+            <component :is="Component" />
+          </transition>
+        </router-view>
+      </main>
     </div>
+    <CommandPalette />
+    <NotificationDrawer />
+    <ToastHost />
   </div>
 </template>
 
 <style scoped>
-.vc-watermark {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 9;
-  overflow: hidden;
-  opacity: 0.5;
-}
-
-.vc-watermark__inner {
+.shell {
   display: flex;
-  flex-wrap: wrap;
-  width: 200%;
-  height: 200%;
-  transform: rotate(-22deg) translate(-25%, -25%);
-  gap: 56px 40px;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  background: var(--bg-app);
 }
-
-.vc-watermark__inner span {
-  font-size: 13px;
-  color: rgba(120, 130, 150, 0.13);
-  white-space: nowrap;
+.main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.content {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  overflow: hidden;
+}
+.route-enter-active,
+.route-leave-active {
+  transition: opacity 0.18s var(--ease), transform 0.18s var(--ease);
+}
+.route-enter-from {
+  opacity: 0;
+  transform: translateY(8px);
+}
+.route-leave-to {
+  opacity: 0;
 }
 </style>

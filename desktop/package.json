@@ -1,12 +1,12 @@
 {
-  "name": "video-device-cloud-desktop",
+  "name": "vidclear-studio-desktop",
   "version": "1.0.0",
   "private": true,
-  "productName": "视频设备云数据服务系统",
-  "description": "视频设备云数据服务系统客户端 —— 设备接入、云存储、告警处置与运维服务一体化平台",
+  "productName": "视频清晰度增强系统",
+  "description": "视频清晰度效果改进应用软件系统 —— AI 视频画质增强工作台桌面客户端",
   "author": {
-    "name": "云视科技有限公司",
-    "email": "support@videocloud.com"
+    "name": "VidClear Studio",
+    "email": "support@vidclear.cn"
   },
   "license": "UNLICENSED",
   "main": "main.cjs"
