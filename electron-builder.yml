@@ -1,0 +1,45 @@
+# 星火链证 XH-CHAIN · electron-builder 打包配置
+# 用法（Windows）：
+#   set ELECTRON_VERSION=<版本>
+#   npx --yes electron-builder@latest --win portable --x64 ^
+#     --config electron-builder.yml -c.electronVersion=%ELECTRON_VERSION% ^
+#     -c.directories.output=release-retry-xxxx
+# 注意：项目不引入 electron 依赖，运行时版本一律通过 -c.electronVersion 传入。
+
+appId: cn.xhchain.desktop
+productName: 星火链证 XH-CHAIN
+copyright: Copyright © 2026 星火链证 XH-CHAIN
+
+directories:
+  buildResources: build
+  output: release
+
+# 前端已由 vite 全量打包为静态资源，运行时不需要任何 node_modules
+files:
+  - dist/**/*
+  - electron/**/*
+  - build/icon.png
+  - package.json
+  - '!node_modules/**/*'
+  - '!**/*.map'
+
+asar: false
+npmRebuild: false
+nodeGypRebuild: false
+buildDependenciesFromSource: false
+
+publish: null
+
+win:
+  target:
+    - target: portable
+      arch:
+        - x64
+  icon: build/icon.png
+  executableName: XH-CHAIN
+  artifactName: xh-chain-${version}-portable-${arch}.exe
+  requestedExecutionLevel: asInvoker
+  legalTrademarks: ''
+
+portable:
+  artifactName: xh-chain-${version}-portable-${arch}.exe
