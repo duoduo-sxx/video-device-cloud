@@ -122,7 +122,7 @@ src/
 
 工程内**不引入**任何 electron 依赖，打包时由 `electron-builder` 临时拉取运行时：
 
-1. `electron-builder.yml`：打包配置（只带 `dist/` 前端产物，asar、免安装单文件 portable、应用图标 `build/icon.ico`）；
+1. `desktop/`：桌面端主进程（`package.json` + `main.cjs` + `renderer-server.cjs`，零 npm 依赖），与 Web 工程依赖完全隔离；打包后通过 127.0.0.1 固定端口本地 http 服务加载 `resources/renderer`（dist 构建产物），保证 localStorage 数据跨次启动保留；
 2. `build/icon.ico` + `build/icons/*.png`：应用图标（独立设计生成，非 Electron 默认图标）；
 3. `.github/workflows/storageops-console.yml`：GitHub Actions 自动打包，推送到 `storageops-web` 分支或手动触发（workflow_dispatch），产物为 Windows x64 portable exe，可在 Actions 页面下载。
 

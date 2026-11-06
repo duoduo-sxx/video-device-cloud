@@ -1,32 +1,37 @@
 # Electron 打包配置（Windows portable）
-# 注意：本工程不引入 electron 依赖，打包时通过命令行 -c.electronVersion 指定版本
+# 注意：本工程不引入 electron 依赖。打包时：
+#   - electron 运行时版本由命令行 -c.electronVersion 注入；
+#   - 桌面端主进程在 desktop/ 目录（自带 package.json + main.cjs，零 npm 依赖），
+#     与 Web 工程依赖完全隔离；
+#   - dist/ 构建产物作为额外资源放入 resources/renderer，由 main.cjs 的本地
+#     http 服务（127.0.0.1 固定端口）提供给渲染进程。
 appId: com.duoduo.storageops
 productName: StorageOps
 copyright: Copyright © 2026 数据存储系统与技术服务
 
 directories:
+  app: desktop
   output: release
   buildResources: build
 
-files:
-  - dist/**
-  - package.json
-
-# 不打包任何源码与 node_modules（纯前端产物，运行时无需 Node 模块）
 asar: true
+compression: maximum
+npmRebuild: false
+
+extraResources:
+  - from: dist
+    to: renderer
+    filter:
+      - '**/*'
 
 win:
+  icon: build/icon.ico
+  executableName: StorageOps
   target:
     - target: portable
       arch:
         - x64
-  icon: build/icon.ico
-  artifactName: ${productName}-${version}-${arch}-portable.${ext}
 
 portable:
-  # 免安装单文件，直接双击运行
-  artifactName: ${productName}-${version}-portable.${ext}
-
-npmRebuild: false
-electronLanguages:
-  - zh-CN
+  requestExecutionLevel: user
+  artifactName: ${productName}-V${version}-portable.${ext}

@@ -1,0 +1,9 @@
+{
+  "name": "storageops-desktop",
+  "version": "1.0.0",
+  "private": true,
+  "productName": "StorageOps",
+  "description": "数据存储系统与技术服务 —— 桌面客户端主进程",
+  "license": "UNLICENSED",
+  "main": "main.cjs"
+}
