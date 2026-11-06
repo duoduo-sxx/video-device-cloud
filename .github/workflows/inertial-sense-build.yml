@@ -10,7 +10,7 @@ on:
       - 'v*'
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   build-windows-portable:
@@ -64,28 +64,6 @@ jobs:
           npx --yes electron-builder@25.1.8 --win portable --x64 --config electron-builder.yml -c.electronVersion=${{ steps.electron.outputs.version }} -c.npmRebuild=false -c.directories.output=%PACK_OUTPUT% > eb-log.txt 2>&1
           if errorlevel 1 ( type eb-log.txt & exit /b 1 )
           dir /b "%PACK_OUTPUT%"
-
-      - name: 失败时上传打包日志
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: electron-builder-日志
-          path: eb-log.txt
-          if-no-files-found: ignore
-
-      - name: 失败时回写日志到分支
-        if: failure()
-        shell: pwsh
-        run: |
-          New-Item -ItemType Directory -Force -Path ci-logs | Out-Null
-          Copy-Item eb-log.txt ci-logs/electron-builder-log.txt -Force
-          git config user.name "github-actions-bot"
-          git config user.email "actions@github.com"
-          git add ci-logs/electron-builder-log.txt
-          if (git diff --cached --quiet) { Write-Host "日志无变化" } else {
-            git commit -m "ci: 记录 electron-builder 失败日志 [skip ci]"
-            git push
-          }
 
       - name: 上传打包产物
         uses: actions/upload-artifact@v4
