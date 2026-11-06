@@ -10,7 +10,7 @@ on:
       - 'v*'
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build-windows-portable:
@@ -67,8 +67,11 @@ jobs:
             -c.directories.output=$out 2>&1 | Tee-Object -FilePath eb-log.txt
           $code = $LASTEXITCODE
           if ($code -ne 0) {
-            Write-Host "electron-builder 失败（exit $code），最近 60 行日志如下："
-            Get-Content eb-log.txt -Tail 60 | ForEach-Object { Write-Host "::error::$_" }
+            Write-Host "electron-builder 失败（exit $code），最近日志如下："
+            Get-Content eb-log.txt -Tail 120 |
+              Where-Object { $_.Trim() -ne '' -and $_ -notmatch '^npm warn' } |
+              Select-Object -Last 25 |
+              ForEach-Object { Write-Host "::error::$_" }
             exit $code
           }
           "OUTDIR=$out" >> $env:GITHUB_ENV
@@ -80,6 +83,20 @@ jobs:
           name: electron-builder-日志
           path: eb-log.txt
           if-no-files-found: ignore
+
+      - name: 失败时回写日志到分支
+        if: failure()
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path ci-logs | Out-Null
+          Copy-Item eb-log.txt ci-logs/electron-builder-log.txt -Force
+          git config user.name "github-actions-bot"
+          git config user.email "actions@github.com"
+          git add ci-logs/electron-builder-log.txt
+          if (git diff --cached --quiet) { Write-Host "日志无变化" } else {
+            git commit -m "ci: 记录 electron-builder 失败日志 [skip ci]"
+            git push
+          }
 
       - name: 上传打包产物
         uses: actions/upload-artifact@v4
