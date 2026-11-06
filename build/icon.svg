@@ -1,0 +1,31 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="tile" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0F2E6B"/>
+      <stop offset="55%" stop-color="#1D4ED8"/>
+      <stop offset="100%" stop-color="#2563EB"/>
+    </linearGradient>
+    <linearGradient id="flow" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#1D4ED8"/>
+      <stop offset="100%" stop-color="#06B6D4"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="0" y="0" width="512" height="512" rx="116" fill="url(#tile)"/>
+
+  <!-- 云体：三个圆 + 底部圆角矩形合成的云朵 -->
+  <g fill="#FFFFFF">
+    <circle cx="196" cy="250" r="54"/>
+    <circle cx="262" cy="214" r="74"/>
+    <circle cx="326" cy="252" r="52"/>
+    <rect x="142" y="246" width="240" height="92" rx="46"/>
+  </g>
+
+  <!-- 双向传输箭头 -->
+  <g>
+    <path d="M260 292 H310" stroke="#1D4ED8" stroke-width="16" stroke-linecap="round"/>
+    <path d="M260 292 H212" stroke="#06B6D4" stroke-width="16" stroke-linecap="round"/>
+    <path d="M334 292 L302 271 L302 313 Z" fill="#1D4ED8"/>
+    <path d="M186 292 L218 271 L218 313 Z" fill="#06B6D4"/>
+  </g>
+</svg>

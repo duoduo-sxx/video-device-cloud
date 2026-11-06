@@ -1,0 +1,39 @@
+# 数据云端协同优化传输平台 · electron-builder 打包配置
+#
+# 项目不引入 electron / electron-builder 依赖，统一通过 npx 临时调用：
+#   npx --yes electron-builder@latest --win portable --x64 --config electron-builder.yml \
+#     -c.electronVersion=<版本> -c.directories.output=<输出目录>
+# 完整命令见 README「桌面端打包」与 .github/workflows。
+
+appId: com.duoduo.cloudflow
+productName: 数据云端协同优化传输平台
+copyright: Copyright © 2026 duoduo-sxx
+
+directories:
+  # 默认输出目录，可被 -c.directories.output 覆盖
+  output: release
+  # 应用图标等资源目录（build/icon.ico / build/icon.png）
+  buildResources: build
+
+files:
+  - dist/**/*
+  - electron/**/*
+  - package.json
+  - "!**/*.map"
+
+# 渲染层是纯静态前端，无任何 Node 依赖，直接打进 asar
+asar: true
+compression: normal
+# 无原生模块，跳过 npm rebuild 以加快打包
+npmRebuild: false
+
+win:
+  icon: build/icon.ico
+  target:
+    - target: portable
+      arch: [x64]
+
+portable:
+  # 产物文件名使用 ASCII，避免跨机器路径编码问题
+  artifactName: CloudFlow-Portable-${version}-${arch}.${ext}
+  requestExecutionLevel: user

@@ -1,0 +1,66 @@
+name: 数据云端协同优化传输平台
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - '**'
+    tags:
+      - 'v*'
+
+concurrency:
+  group: desktop-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  windows-portable:
+    name: 打包 Windows Portable (x64)
+    runs-on: windows-latest
+    env:
+      ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
+      NPM_CONFIG_ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
+      ELECTRON_BUILDER_BINARIES_MIRROR: https://npmmirror.com/mirrors/electron-builder-binaries/
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 安装 Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: 安装依赖
+        run: npm install --no-audit --no-fund
+
+      - name: 构建前端
+        run: npm run build
+
+      - name: 读取最新 Electron 版本
+        id: electron
+        shell: pwsh
+        run: |
+          $version = (npm view electron version).ToString().Trim()
+          Write-Host "Electron version: $version"
+          "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+
+      - name: electron-builder 打包
+        shell: pwsh
+        env:
+          ELECTRON_VERSION: ${{ steps.electron.outputs.version }}
+        run: |
+          $outDir = "release-$([System.Guid]::NewGuid().ToString('N').Substring(0,8))"
+          npx --yes electron-builder@latest --win portable --x64 `
+            --config electron-builder.yml `
+            -c.electronVersion=$env:ELECTRON_VERSION `
+            -c.directories.output=$outDir
+          "OUT_DIR=$outDir" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
+      - name: 上传打包产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: CloudFlow-Windows-Portable-x64
+          path: ${{ env.OUT_DIR }}/*.exe
+          if-no-files-found: error
+          retention-days: 14
