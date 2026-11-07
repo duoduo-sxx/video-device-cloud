@@ -25,6 +25,10 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 40
 
+    # 需要写权限：打包结束后把运行日志回写到 .ci/last-run.log（GITHUB_TOKEN 触发的 push 不会再触发 workflow）
+    permissions:
+      contents: write
+
     env:
       ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
       NPM_CONFIG_ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
