@@ -1,6 +1,8 @@
 node_modules
 dist
 release*
+electron-builder.ci.yml
+electron-builder.log
 dist-*
 .tmp
 *.timestamp-*.mjs
