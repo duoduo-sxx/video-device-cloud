@@ -12,17 +12,21 @@ on:
     tags:
       - 'v*'
 
+permissions:
+  contents: read
+
 concurrency:
   group: mirrorfield-${{ github.ref }}
   cancel-in-progress: true
 
 env:
-  # Electron 运行时走镜像，避免直连 GitHub Releases 超时
+  # portable 目标底层是 NSIS，必须下载 nsis / winCodeSign 二进制；
+  # 直连 GitHub Releases 在 CI 上常被限流导致打包步骤 exit 1，因此两者都走镜像。
   ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
   NPM_CONFIG_ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
-  # electron-builder 的 nsis/winCodeSign 等二进制约 60MB：CI 跑在 GitHub 机房，直连更快，
-  # 因此这里不覆盖 ELECTRON_BUILDER_BINARIES_MIRROR；国内本地打包由 pack-win.bat 设置。
-  PROJECT_DIR: mirrorfield
+  ELECTRON_BUILDER_BINARIES_MIRROR: https://npmmirror.com/mirrors/electron-builder-binaries/
+  # 纯前端产物，不做代码签名
+  CSC_IDENTITY_AUTO_DISCOVERY: 'false'
 
 jobs:
   build-windows-portable:
@@ -49,6 +53,15 @@ jobs:
       - name: 构建前端
         run: npm run build
 
+      - name: 校验构建产物
+        shell: cmd
+        run: |
+          if not exist "dist\index.html" (
+            echo [ERROR] dist\index.html missing
+            exit /b 1
+          )
+          echo dist build OK
+
       - name: 解析 Electron 版本
         id: electron
         shell: bash
@@ -62,18 +75,26 @@ jobs:
           echo "Electron version: $VER"
 
       - name: 打包 Windows 便携版
-        run: >
-          npx --yes electron-builder@latest
-          --win portable --x64
-          --config electron-builder.yml
-          -c.electronVersion=${{ steps.electron.outputs.version }}
-          -c.directories.output=release-ci
+        shell: cmd
+        run: |
+          echo Electron version: ${{ steps.electron.outputs.version }}
+          npx --yes electron-builder@latest --win portable --x64 --config electron-builder.yml -c.electronVersion=${{ steps.electron.outputs.version }} -c.directories.output=release-ci > pack.log 2>&1
+          set "RC=%ERRORLEVEL%"
+          type pack.log
+          type pack.log >> "%GITHUB_STEP_SUMMARY%"
+          if not "%RC%"=="0" (
+            echo [ERROR] electron-builder failed with exit code %RC%
+            exit /b %RC%
+          )
 
       - name: 校验产物
-        shell: bash
+        shell: cmd
         run: |
-          ls -lh release-ci
-          test -n "$(find release-ci -maxdepth 1 -name '*.exe' -print -quit)"
+          dir release-ci
+          if not exist "release-ci\*.exe" (
+            echo [ERROR] no exe produced
+            exit /b 1
+          )
 
       - name: 上传安装包
         uses: actions/upload-artifact@v4
@@ -82,3 +103,12 @@ jobs:
           path: mirrorfield/release-ci/*.exe
           if-no-files-found: error
           retention-days: 30
+
+      - name: 上传打包日志
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: MirrorField-pack-log
+          path: mirrorfield/pack.log
+          if-no-files-found: ignore
+          retention-days: 7
