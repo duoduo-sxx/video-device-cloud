@@ -77,7 +77,14 @@ jobs:
             -c.electronVersion=$env:ELECTRON_VERSION `
             -c.publish=never `
             -c.directories.output=$env:PACK_OUTPUT 2>&1 | Tee-Object -FilePath ci-build.log
-          exit $LASTEXITCODE
+          $code = $LASTEXITCODE
+          if ($code -ne 0) {
+            # 把失败日志尾部转成 check annotation，便于通过 API / 仓库页面直接定位
+            $tail = if (Test-Path ci-build.log) { Get-Content ci-build.log -Tail 80 | Out-String } else { 'no log captured' }
+            $esc = $tail -replace '%', '%25' -replace "`r", '' -replace "`n", '%0A'
+            Write-Output "::error title=electron-builder-failed-$code::$esc"
+          }
+          exit $code
 
       - name: 列出产物
         if: success()
@@ -90,15 +97,20 @@ jobs:
         run: |
           git config user.name "ci-log-bot"
           git config user.email "ci-log-bot@users.noreply.github.com"
-          git fetch origin spacescape-console
           New-Item -ItemType Directory -Force -Path .ci | Out-Null
           $tail = if (Test-Path ci-build.log) { Get-Content ci-build.log -Tail 500 | Out-String } else { "no build log captured" }
           $header = "run: #${{ github.run_number }} (id ${{ github.run_id }})`nelectron: $env:ELECTRON_VERSION`nresult: ${{ job.status }}`ntime: $(Get-Date -Format o)`n`n"
           Set-Content -Path .ci/last-run.log -Value ($header + $tail) -Encoding utf8
           git add .ci/last-run.log
-          git commit -m "ci: 记录 SpaceScape 打包运行 #${{ github.run_number }} [skip ci]" 2>$null
-          git pull --rebase origin spacescape-console
-          git push origin spacescape-console
+          git commit -m "ci: 记录 SpaceScape 打包运行 #${{ github.run_number }} [skip ci]"
+          if ($LASTEXITCODE -ne 0) { Write-Output "commit skipped (nothing changed)" }
+          git pull --rebase origin spacescape-console 2>&1 | Out-String | Write-Output
+          $pushOut = git push origin spacescape-console 2>&1 | Out-String
+          Write-Output $pushOut
+          if ($LASTEXITCODE -ne 0) {
+            $esc = $pushOut -replace '%', '%25' -replace "`r", '' -replace "`n", '%0A'
+            Write-Output "::error title=ci-log-push-failed::$esc"
+          }
 
       - name: 上传便携版产物
         if: success()
