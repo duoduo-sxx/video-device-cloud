@@ -63,13 +63,17 @@ jobs:
 
       - name: 打包 Windows 便携版
         shell: pwsh
-        run: >
-          npx --yes electron-builder@${{ env.ELECTRON_BUILDER_VERSION }}
-          --win portable --x64
-          --config electron-builder.yml
-          -c.electronVersion=${{ steps.electron.outputs.version }}
-          -c.directories.output=release
-          --publish never
+        run: |
+          $args = @('--yes', 'electron-builder@${{ env.ELECTRON_BUILDER_VERSION }}', '--win', 'portable', '--x64', '--config', 'electron-builder.yml', '-c.electronVersion=${{ steps.electron.outputs.version }}', '-c.directories.output=release', '--publish', 'never')
+          npx @args 2>&1 | Tee-Object -FilePath pack.log
+          $code = $LASTEXITCODE
+          if ($code -ne 0) {
+            $body = (Get-Content pack.log -Tail 80 | Out-String)
+            $summary = "## 打包失败 exit=$code" + "`n`n" + '```text' + "`n" + $body + "`n" + '```'
+            $summary | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+            Write-Host $body
+            exit $code
+          }
 
       - name: 校验产物
         shell: pwsh
@@ -90,11 +94,24 @@ jobs:
         if: failure()
         shell: pwsh
         run: |
-          Write-Host "=== 环境 ==="
-          node -v
-          npm -v
-          Get-ChildItem "$env:LOCALAPPDATA\electron-builder\Cache" -ErrorAction SilentlyContinue | Select-Object Name
-          Write-Host "=== npm 日志尾部 ==="
-          $log = Get-ChildItem "$env:LOCALAPPDATA\npm-cache\_logs" -Filter *.log -ErrorAction SilentlyContinue |
-            Sort-Object LastWriteTime -Descending | Select-Object -First 1
-          if ($log) { Get-Content $log.FullName -Tail 40 }
+          $out = @()
+          $out += "## 失败诊断"
+          $out += ""
+          $out += '```text'
+          $out += "node $(node -v) / npm $(npm -v)"
+          $out += "electron-builder cache:"
+          $out += (Get-ChildItem "$env:LOCALAPPDATA\electron-builder\Cache" -ErrorAction SilentlyContinue | ForEach-Object { $_.Name }) -join ', '
+          $out += "release 目录:"
+          $out += (Get-ChildItem release -ErrorAction SilentlyContinue | ForEach-Object { $_.Name }) -join ', '
+          if (Test-Path pack.log) { $out += ""; $out += "--- pack.log (tail 120) ---"; $out += (Get-Content pack.log -Tail 120) }
+          $out += '```'
+          $out -join "`n" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+          $out | ForEach-Object { Write-Host $_ }
+
+      - name: 成功摘要
+        if: success()
+        shell: pwsh
+        run: |
+          $exe = Get-ChildItem release -Filter *.exe | Select-Object -First 1
+          ("## 打包成功`n`n- 产物：{0}`n- 大小：{1:N1} MB`n- Electron：{2}" -f $exe.Name, ($exe.Length / 1MB), '${{ steps.electron.outputs.version }}') |
+            Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
