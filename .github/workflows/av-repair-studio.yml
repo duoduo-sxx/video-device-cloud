@@ -64,15 +64,20 @@ jobs:
       - name: 打包 Windows 便携版
         shell: pwsh
         run: |
-          $args = @('--yes', 'electron-builder@${{ env.ELECTRON_BUILDER_VERSION }}', '--win', 'portable', '--x64', '--config', 'electron-builder.yml', '-c.electronVersion=${{ steps.electron.outputs.version }}', '-c.directories.output=release', '--publish', 'never')
-          npx @args 2>&1 | Tee-Object -FilePath pack.log
+          npx --yes "electron-builder@${{ env.ELECTRON_BUILDER_VERSION }}" --win portable --x64 --config electron-builder.yml "-c.electronVersion=${{ steps.electron.outputs.version }}" -c.directories.output=release --publish never *> pack.log
           $code = $LASTEXITCODE
+          Write-Host "electron-builder exit=$code"
+          Get-Content pack.log -Tail 80
+          $lines = Get-Content pack.log -Tail 40
+          $flat = ($lines -join ' | ') -replace '%', 'pct' -replace '\r', ' ' -replace '\n', ' '
+          if ($flat.Length -gt 3800) { $flat = $flat.Substring($flat.Length - 3800) }
           if ($code -ne 0) {
-            $body = (Get-Content pack.log -Tail 80 | Out-String)
-            $summary = "## 打包失败 exit=$code" + "`n`n" + '```text' + "`n" + $body + "`n" + '```'
-            $summary | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
-            Write-Host $body
+            Write-Host "::error title=electron-builder exit=$code::$flat"
             exit $code
+          }
+          if (-not (Get-ChildItem release -Filter *.exe -ErrorAction SilentlyContinue)) {
+            Write-Host "::error title=no-exe::exit=0 但 release 下无 exe。日志: $flat"
+            exit 1
           }
 
       - name: 校验产物
@@ -107,6 +112,12 @@ jobs:
           $out += '```'
           $out -join "`n" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
           $out | ForEach-Object { Write-Host $_ }
+          # 同时把日志压成单行写进 annotation（公开可见，便于快速定位）
+          if (Test-Path pack.log) {
+            $flat = ((Get-Content pack.log -Tail 40) -join ' | ') -replace '%', 'pct' -replace '\r', ' ' -replace '\n', ' '
+            if ($flat.Length -gt 3800) { $flat = $flat.Substring($flat.Length - 3800) }
+            Write-Host "::error title=pack-log::$flat"
+          }
 
       - name: 成功摘要
         if: success()
