@@ -103,9 +103,28 @@ npx --yes electron-builder@latest --win portable --x64 --config electron-builder
 
 产物为 `PACK_OUTPUT` 目录下的 `CloudFlow-Portable-<version>-x64.exe`（单文件免安装，双击即用）。
 
+> **PowerShell / 跨 shell 注意**：`-c.directories.output=xxx` 这类短别名覆盖在 PowerShell 下会被当成 `--config` 的文件路径，报 `ENOENT: open '.directories.output=release-xxxx'`。在 pwsh、GitHub Actions 等环境请改用临时配置：
+>
+> ```yaml
+> # electron-builder.ci.yml
+> extends: ./electron-builder.yml
+> electronVersion: 38.2.5      # 先用 npm view electron version 取最新
+> directories:
+>   output: release-xxx
+>   buildResources: build
+> ```
+>
+> ```powershell
+> npx --yes electron-builder@latest --win portable --x64 --config electron-builder.ci.yml
+> ```
+>
+> CMD 下参数按原样透传，上面那段 bat 可以直接用。
+
 ### GitHub Actions 自动打包
 
-`.github/workflows/cloudflow-desktop.yml`（名称：数据云端协同优化传输平台）在任意分支 push 或手动触发（workflow_dispatch）时，于 `windows-latest` 上执行与上完全相同的打包流程并上传 Artifact。镜像变量已写入 workflow，国内/海外 Runner 均可用。
+`.github/workflows/cloudflow-desktop.yml`（名称：数据云端协同优化传输平台）在任意分支 push 或手动触发（workflow_dispatch）时，于 `windows-latest` 上执行打包并上传 Artifact。镜像变量已写入 workflow，国内/海外 Runner 均可用。Workflow 内部用「生成 extends 临时配置」的方式传递 electron 版本与输出目录，规避了上面提到的 `-c.*` 问题；失败时会把错误尾部写成 annotation，并附带 `electron-builder-log` 日志 Artifact。
+
+产物 Artifact 名：`CloudFlow-Windows-Portable-x64`，保留 14 天。
 
 ### 桌面端实现要点
 
