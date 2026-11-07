@@ -57,12 +57,14 @@ mkdirSync(path.join(root, outDir), { recursive: true })
 const targets = process.argv.slice(2)
 const targetArgs = targets.length ? targets : ['--win', 'portable', '--x64']
 
-console.log(`▶ [4/4] electron-builder ${targetArgs.join(' ')} → ./${outDir}`)
+const ELECTRON_BUILDER_VERSION = process.env.ELECTRON_BUILDER_VERSION || '26.18.0'
+
+console.log(`▶ [4/4] electron-builder@${ELECTRON_BUILDER_VERSION} ${targetArgs.join(' ')} → ./${outDir}`)
 run(
   npxCmd,
   [
     '--yes',
-    'electron-builder@latest',
+    `electron-builder@${ELECTRON_BUILDER_VERSION}`,
     ...targetArgs,
     '--config', 'electron-builder.yml',
     `-c.electronVersion=${electronVersion}`,

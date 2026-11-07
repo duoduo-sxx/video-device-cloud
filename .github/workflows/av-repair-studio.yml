@@ -2,6 +2,11 @@ name: 音视频自动化修补系统
 
 on:
   workflow_dispatch:
+    inputs:
+      electron_version:
+        description: 'Electron 版本（留空则取 npm 上最新稳定版）'
+        required: false
+        default: ''
   push:
     branches:
       - main
@@ -12,28 +17,31 @@ on:
 permissions:
   contents: read
 
+# 说明：
+# 1) 项目本身不引入 electron 依赖，运行时由 electron-builder 按 electronVersion 下载注入；
+# 2) CI 跑在 GitHub 海外 runner 上，直连官方源比走 npmmirror 更快更稳；
+#    国内本地打包请用 `npm run dist:win`（脚本内已注入 npmmirror 镜像）；
+# 3) 版本全部固定，避免 @latest 漂移导致构建不可复现。
+env:
+  NODE_VERSION: '22'
+  ELECTRON_BUILDER_VERSION: '26.18.0'
+  # 无签名证书：跳过签名与 rcedit（同时避开 Windows runner 解压 winCodeSign 的符号链接权限问题）
+  CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+
 jobs:
   build-windows-portable:
     name: Windows 便携版打包
     runs-on: windows-latest
-    timeout-minutes: 45
-
-    env:
-      # Electron / electron-builder 二进制国内镜像
-      ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
-      NPM_CONFIG_ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
-      ELECTRON_BUILDER_BINARIES_MIRROR: https://npmmirror.com/mirrors/electron-builder-binaries/
-      # 无签名证书时跳过代码签名
-      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+    timeout-minutes: 40
 
     steps:
       - name: 检出代码
         uses: actions/checkout@v4
 
-      - name: 安装 Node.js 20
+      - name: 安装 Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
       - name: 安装依赖
@@ -46,23 +54,29 @@ jobs:
         id: electron
         shell: pwsh
         run: |
-          $version = (npm view electron version).Trim()
+          $version = "${{ inputs.electron_version }}".Trim()
+          if ([string]::IsNullOrWhiteSpace($version)) {
+            $version = (npm view electron version).Trim()
+          }
           Write-Host "electronVersion = $version"
           "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
 
       - name: 打包 Windows 便携版
         shell: pwsh
         run: >
-          npx --yes electron-builder@latest --win portable --x64
+          npx --yes electron-builder@${{ env.ELECTRON_BUILDER_VERSION }}
+          --win portable --x64
           --config electron-builder.yml
           -c.electronVersion=${{ steps.electron.outputs.version }}
           -c.directories.output=release
+          --publish never
 
       - name: 校验产物
         shell: pwsh
         run: |
-          Get-ChildItem release -Filter *.exe | ForEach-Object { Write-Host $_.FullName ($_.Length / 1MB).ToString('0.0') + ' MB' }
-          if (-not (Get-ChildItem release -Filter *.exe)) { throw '未找到打包产物' }
+          $exe = Get-ChildItem release -Filter *.exe -ErrorAction SilentlyContinue
+          if (-not $exe) { throw '未找到打包产物 .exe' }
+          $exe | ForEach-Object { Write-Host ("{0}  {1:N1} MB" -f $_.Name, ($_.Length / 1MB)) }
 
       - name: 上传产物
         uses: actions/upload-artifact@v4
@@ -71,3 +85,16 @@ jobs:
           path: release/*.exe
           if-no-files-found: error
           retention-days: 14
+
+      - name: 失败诊断
+        if: failure()
+        shell: pwsh
+        run: |
+          Write-Host "=== 环境 ==="
+          node -v
+          npm -v
+          Get-ChildItem "$env:LOCALAPPDATA\electron-builder\Cache" -ErrorAction SilentlyContinue | Select-Object Name
+          Write-Host "=== npm 日志尾部 ==="
+          $log = Get-ChildItem "$env:LOCALAPPDATA\npm-cache\_logs" -Filter *.log -ErrorAction SilentlyContinue |
+            Sort-Object LastWriteTime -Descending | Select-Object -First 1
+          if ($log) { Get-Content $log.FullName -Tail 40 }

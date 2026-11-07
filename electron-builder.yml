@@ -25,7 +25,8 @@ files:
   - "!dist/assets/*.map"
 
 asar: true
-compression: maximum
+# CI 上用 normal：便携包本身已用 LZMA 压缩，maximum 只会显著拖长构建时间
+compression: normal
 electronLanguages:
   - zh-CN
   - en-US
