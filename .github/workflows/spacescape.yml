@@ -44,52 +44,46 @@ jobs:
           node-version: '22'
           cache: npm
 
-      - name: 安装依赖
-        run: npm install --no-audit --no-fund
-        shell: pwsh
-
-      - name: 构建前端产物
-        run: npm run build
-        shell: pwsh
-
-      - name: 解析 Electron 版本
-        id: electron
-        shell: pwsh
-        run: |
-          $manual = "${{ github.event.inputs.electron_version }}".Trim()
-          if ($manual) {
-            $v = $manual
-          } else {
-            $v = (npm view electron version).ToString().Trim()
-          }
-          Write-Host "ELECTRON_VERSION = $v"
-          "version=$v" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
-          "ELECTRON_VERSION=$v" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
-
-      - name: electron-builder 打包（win portable x64）
+      # 打包命令与本地 cmd 打包命令保持一致（run 块写入临时 .cmd 文件执行，for 变量需转义为 %%i）
+      - name: 打包（Windows 便携版，cmd）
         id: pack
-        shell: pwsh
+        shell: cmd
         env:
-          PACK_OUTPUT: release-${{ github.run_number }}
+          EB_VERSION: 25.1.8
+          INPUT_ELECTRON_VERSION: ${{ github.event.inputs.electron_version }}
         run: |
-          npx --yes electron-builder@latest --win portable --x64 `
-            --config electron-builder.yml `
-            -c.electronVersion=$env:ELECTRON_VERSION `
-            -c.publish=never `
-            -c.directories.output=$env:PACK_OUTPUT 2>&1 | Tee-Object -FilePath ci-build.log
-          $code = $LASTEXITCODE
-          if ($code -ne 0) {
-            # 把失败日志尾部转成 check annotation，便于通过 API / 仓库页面直接定位
-            $tail = if (Test-Path ci-build.log) { Get-Content ci-build.log -Tail 80 | Out-String } else { 'no log captured' }
-            $esc = $tail -replace '%', '%25' -replace "`r", '' -replace "`n", '%0A'
-            Write-Output "::error title=electron-builder-failed-$code::$esc"
-          }
-          exit $code
+          call :main > ci-build.log 2>&1
+          exit /b %ERRORLEVEL%
 
-      - name: 列出产物
-        if: success()
+          :main
+          echo ====== SpaceScape Windows portable build ======
+          echo electron-builder=%EB_VERSION% run=#%GITHUB_RUN_NUMBER%
+          echo.
+
+          npm install
+          npm run build
+
+          for /f "delims=" %%i in ('npm view electron version') do set "ELECTRON_VERSION=%%i"
+          if not "%INPUT_ELECTRON_VERSION%"=="" set "ELECTRON_VERSION=%INPUT_ELECTRON_VERSION%"
+          echo ELECTRON_VERSION=%ELECTRON_VERSION%
+
+          set "PACK_OUTPUT=release-retry-%RANDOM%"
+          echo PACK_OUTPUT=%PACK_OUTPUT%
+          npx --yes electron-builder@%EB_VERSION% --win portable --x64 --config electron-builder.yml -c.electronVersion=%ELECTRON_VERSION% -c.directories.output=%PACK_OUTPUT%
+
+          set "EC=%ERRORLEVEL%"
+          echo ====== artifacts ======
+          dir /s /b "%PACK_OUTPUT%"
+          echo ====== exit code %EC% ======
+          exit /b %EC%
+
+      - name: 失败时把日志尾部转成 annotation
+        if: failure()
         shell: pwsh
-        run: Get-ChildItem -Path "release-${{ github.run_number }}" -Recurse | Select-Object FullName, Length | Out-String | Tee-Object -FilePath ci-build.log -Append
+        run: |
+          $tail = if (Test-Path ci-build.log) { Get-Content ci-build.log -Tail 80 | Out-String } else { 'no log captured' }
+          $esc = $tail -replace '%', '%25' -replace "`r", '' -replace "`n", '%0A'
+          Write-Output "::error title=SpaceScape-build-failed::$esc"
 
       - name: 回写打包日志到分支（远端可读，触发不打扰）
         if: always()
@@ -99,17 +93,18 @@ jobs:
           git config user.email "ci-log-bot@users.noreply.github.com"
           New-Item -ItemType Directory -Force -Path .ci | Out-Null
           $tail = if (Test-Path ci-build.log) { Get-Content ci-build.log -Tail 500 | Out-String } else { "no build log captured" }
-          $header = "run: #${{ github.run_number }} (id ${{ github.run_id }})`nelectron: $env:ELECTRON_VERSION`nresult: ${{ job.status }}`ntime: $(Get-Date -Format o)`n`n"
+          $header = "run: #${{ github.run_number }} (id ${{ github.run_id }})`nresult: ${{ job.status }}`ntime: $(Get-Date -Format o)`n`n"
           Set-Content -Path .ci/last-run.log -Value ($header + $tail) -Encoding utf8
           git add .ci/last-run.log
           git commit -m "ci: 记录 SpaceScape 打包运行 #${{ github.run_number }} [skip ci]"
-          if ($LASTEXITCODE -ne 0) { Write-Output "commit skipped (nothing changed)" }
+          if ($LASTEXITCODE -ne 0) { Write-Output "commit skipped (nothing changed)"; exit 0 }
           git pull --rebase origin spacescape-console 2>&1 | Out-String | Write-Output
           $pushOut = git push origin spacescape-console 2>&1 | Out-String
           Write-Output $pushOut
           if ($LASTEXITCODE -ne 0) {
             $esc = $pushOut -replace '%', '%25' -replace "`r", '' -replace "`n", '%0A'
             Write-Output "::error title=ci-log-push-failed::$esc"
+            exit 1
           }
 
       - name: 上传便携版产物
@@ -117,6 +112,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: SpaceScape-portable-x64
-          path: release-${{ github.run_number }}/*.exe
+          path: release-retry-*/**/*.exe
           if-no-files-found: error
           retention-days: 14
