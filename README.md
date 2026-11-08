@@ -90,39 +90,69 @@ src/
 
 Windows CMD 下直接执行：
 
-```bat
-set "ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/"
-set "NPM_CONFIG_ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/"
-set "ELECTRON_BUILDER_BINARIES_MIRROR=https://npmmirror.com/mirrors/electron-builder-binaries/"
-npm install
-npm run build
-for /f "delims=" %i in ('npm view electron version') do set "ELECTRON_VERSION=%i"
-set "PACK_OUTPUT=release-retry-%RANDOM%"
-npx --yes electron-builder@latest --win portable --x64 --config electron-builder.yml -c.electronVersion=%ELECTRON_VERSION% -c.directories.output=%PACK_OUTPUT%
+### 一键打包（推荐）
+
+任意 shell 通用（CMD / PowerShell / Git Bash / macOS / Linux）：
+
+```bash
+node scripts/pack-win.mjs                                   # 输出到 release/
+node scripts/pack-win.mjs --output release-test             # 自定义输出目录
+node scripts/pack-win.mjs --electron-version 45.2.3         # 指定 Electron 版本
+node scripts/pack-win.mjs --dry-run                         # 只打印命令与配置，不打包
 ```
 
-产物为 `PACK_OUTPUT` 目录下的 `CloudFlow-Portable-<version>-x64.exe`（单文件免安装，双击即用）。
+Windows 上也可以直接双击 `pack-win.bat`，或：
 
-> **PowerShell / 跨 shell 注意**：`-c.directories.output=xxx` 这类短别名覆盖在 PowerShell 下会被当成 `--config` 的文件路径，报 `ENOENT: open '.directories.output=release-xxxx'`。在 pwsh、GitHub Actions 等环境请改用临时配置：
->
-> ```yaml
-> # electron-builder.ci.yml
-> extends: ./electron-builder.yml
-> electronVersion: 38.2.5      # 先用 npm view electron version 取最新
-> directories:
->   output: release-xxx
->   buildResources: build
-> ```
->
-> ```powershell
-> npx --yes electron-builder@latest --win portable --x64 --config electron-builder.ci.yml
-> ```
->
-> CMD 下参数按原样透传，上面那段 bat 可以直接用。
+```powershell
+powershell -ExecutionPolicy Bypass -File .\pack-win.ps1
+```
+
+脚本流程：检查 `dist/` → 查询最新 Electron 版本 → 生成 `electron-builder.generated.yml`（`extends: ./electron-builder.yml`，写入 electron 版本与输出目录）→ 执行 `npx --yes electron-builder@latest --win portable --x64 --config <生成的配置> --publish never` → 打印 exe 路径与体积。`npm install` / `npm run build` 由两个 wrapper 负责，也可手动先跑。
+
+产物：`release/CloudFlow-Portable-1.0.0-x64.exe`（单文件免安装，双击即用）。
+
+### 为什么不能用 `-c.xxx=yyy`
+
+`-c` 是 `--config` 的短别名。写成 `-c.directories.output=release` 时，yargs 会把它当成**又一个配置文件路径**（electron-builder 源码 `newConfig.extends = configItem`），于是报：
+
+```
+⨯ ENOENT: no such file or directory, open 'D:\a\...\.directories.output=release'
+```
+
+`-c.electronVersion=xxx` 同样中招——它和 `.directories.output` 一起进数组，后写的 `extends` 覆盖前一个，所以错误信息里只看到 `.directories.output=release`。这个现象在 PowerShell（含 GitHub Actions 的 pwsh）下必现，部分 bash 环境不出现，容易误判成“本地能跑、CI 就挂”。
+
+正确做法是生成一份临时配置（脚本已自动完成）：
+
+```yaml
+# electron-builder.generated.yml
+extends: ./electron-builder.yml
+electronVersion: 45.2.3
+directories:
+  output: release
+  buildResources: build
+```
+
+```bash
+npx --yes electron-builder@latest --win portable --x64 --config electron-builder.generated.yml --publish never
+```
+
+### Node 版本
+
+electron-builder@latest（26.x）依赖的 `@electron/rebuild` 要求 **Node >= 22.12**。用 Node 20 会看到：
+
+```
+npm warn EBADENGINE package: '@electron/rebuild@4.2.0', required: { node: '>=22.12.0' }, current: { node: 'v20.20.2' }
+```
+
+这本身只是警告，但建议直接升到 Node 22 LTS / 24（CI 用的是 24），避免后续原生模块相关的怪异报错。
 
 ### GitHub Actions 自动打包
 
-`.github/workflows/cloudflow-desktop.yml`（名称：数据云端协同优化传输平台）在任意分支 push 或手动触发（workflow_dispatch）时，于 `windows-latest` 上执行打包并上传 Artifact。镜像变量已写入 workflow，国内/海外 Runner 均可用。Workflow 内部用「生成 extends 临时配置」的方式传递 electron 版本与输出目录，规避了上面提到的 `-c.*` 问题；失败时会把错误尾部写成 annotation，并附带 `electron-builder-log` 日志 Artifact。
+`.github/workflows/cloudflow-desktop.yml`（名称：数据云端协同优化传输平台）在任意分支 push 或手动触发（workflow_dispatch）时，于 `windows-latest` 上执行打包并上传 Artifact。镜像变量已写入 workflow，国内/海外 Runner 均可用。
+
+Workflow 的打包步骤直接调用 `node scripts/pack-win.mjs`，与本地命令**完全同一条路径**，不会出现"本地能打、CI 报错"的偏差。失败时会把错误尾部写成 annotation（在 run 页面直接可见），并附带 `electron-builder-log` 日志 Artifact。
+
+> 注意：GitHub 的 **Re-run** 会沿用该次运行对应 commit 的 workflow 定义。修复后如果重跑旧的失败记录，仍然执行旧命令、仍然报同样的错——请手动触发一次新的运行（Run workflow），或向分支推一次提交。
 
 产物 Artifact 名：`CloudFlow-Windows-Portable-x64`，保留 14 天。
 

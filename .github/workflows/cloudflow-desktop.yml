@@ -51,23 +51,11 @@ jobs:
           ELECTRON_VERSION: ${{ steps.electron.outputs.version }}
         run: |
           $outDir = "release-$([System.Guid]::NewGuid().ToString('N').Substring(0,8))"
-          $cfg = Join-Path $PWD "electron-builder.ci.yml"
-          # 注意：不能用 -c.directories.output=xxx 这种短别名覆盖。
-          # PowerShell 会把 "-c" 当成 --config 并把剩余部分当作配置文件路径，
-          # 报 ENOENT: open '.directories.output=release-xxxx'。
-          # 改为生成一份 extends 基础配置的临时配置，跨 shell 都安全。
-          $lines = @(
-            "extends: ./electron-builder.yml",
-            "electronVersion: $env:ELECTRON_VERSION",
-            "directories:",
-            "  output: $outDir",
-            "  buildResources: build"
-          )
-          [System.IO.File]::WriteAllLines($cfg, $lines, (New-Object System.Text.UTF8Encoding($false)))
-          Get-Content $cfg | ForEach-Object { Write-Host $_ }
-
+          # 统一走 scripts/pack-win.mjs：脚本内部生成 extends 临时配置后再调 electron-builder。
+          # 不要在这里用 -c.directories.output=xxx —— PowerShell 下会被 yargs 当成
+          # --config 的又一个配置文件路径，报 ENOENT: open '...\.directories.output=release'。
           $logPath = Join-Path $PWD "electron-builder.log"
-          npx --yes electron-builder@latest --win portable --x64 --config $cfg 2>&1 | Tee-Object -FilePath $logPath
+          node scripts/pack-win.mjs --electron-version $env:ELECTRON_VERSION --output $outDir 2>&1 | Tee-Object -FilePath $logPath
           $code = $LASTEXITCODE
           if ($code -ne 0) {
             $tail = (Get-Content $logPath -Tail 30) -join ' | '
@@ -77,7 +65,7 @@ jobs:
           }
           Write-Host "=== 输出目录内容 ==="
           Get-ChildItem -Recurse $outDir | ForEach-Object { $_.FullName }
-          if (-not (Get-ChildItem "$outDir" -Filter *.exe -ErrorAction SilentlyContinue)) {
+          if (-not (Get-ChildItem "$outDir" -Filter *.exe -Recurse -ErrorAction SilentlyContinue)) {
             Write-Host "::error title=未生成 exe::打包完成但 $outDir 下没有 exe 文件"
             exit 1
           }

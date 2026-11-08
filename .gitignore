@@ -2,7 +2,9 @@ node_modules
 dist
 release*
 electron-builder.ci.yml
+electron-builder.generated.yml
 electron-builder.log
+build-pack*.log
 dist-*
 .tmp
 *.timestamp-*.mjs

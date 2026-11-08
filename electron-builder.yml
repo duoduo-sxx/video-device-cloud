@@ -1,9 +1,12 @@
 # 数据云端协同优化传输平台 · electron-builder 打包配置
 #
-# 项目不引入 electron / electron-builder 依赖，统一通过 npx 临时调用：
-#   npx --yes electron-builder@latest --win portable --x64 --config electron-builder.yml \
-#     -c.electronVersion=<版本> -c.directories.output=<输出目录>
-# 完整命令见 README「桌面端打包」与 .github/workflows。
+# 项目不引入 electron / electron-builder 依赖，统一通过 npx 临时调用。
+# 统一入口：node scripts/pack-win.mjs（或 Windows 下双击 pack-win.bat）
+#
+# 注意：不要用 `-c.electronVersion=xxx` / `-c.directories.output=xxx` 这类短别名
+# 覆盖。PowerShell 下 yargs 会把它们当成 `--config` 的又一个配置文件路径，
+# 报 ENOENT: open '...\.directories.output=release'。脚本改为生成
+# electron-builder.generated.yml（extends 本文件）来传参。
 
 appId: com.duoduo.cloudflow
 productName: 数据云端协同优化传输平台
