@@ -45,7 +45,8 @@ jobs:
       - name: 准备 Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          # electron-builder 26 依赖的 @electron/rebuild / node-abi 要求 node >= 22.12
+          node-version: 22
 
       - name: 安装依赖
         run: npm install --no-audit --no-fund
@@ -75,32 +76,45 @@ jobs:
           echo "Electron version: $VER"
 
       - name: 打包 Windows 便携版
-        shell: cmd
+        shell: bash
+        env:
+          ELECTRON_VERSION: ${{ steps.electron.outputs.version }}
         run: |
-          echo Electron version: ${{ steps.electron.outputs.version }}
-          npx --yes electron-builder@latest --win portable --x64 --config electron-builder.yml -c.electronVersion=${{ steps.electron.outputs.version }} -c.directories.output=release-ci > pack.log 2>&1
-          set "RC=%ERRORLEVEL%"
-          type pack.log
-          type pack.log >> "%GITHUB_STEP_SUMMARY%"
-          if not "%RC%"=="0" (
-            echo [ERROR] electron-builder failed with exit code %RC%
-            exit /b %RC%
-          )
+          set -o pipefail
+          # electron-builder 26 已不支持 `-c.xxx=yyy` 形式的覆盖（会把整串当成配置文件路径，
+          # 报 ENOENT '.directories.output=...'），因此把 electronVersion 合并进临时配置文件，
+          # 命令行只传 --config 文件本身，所有参数都落在 YAML 里。
+          cp electron-builder.yml electron-builder.ci.yml
+          echo "electronVersion: ${ELECTRON_VERSION}" >> electron-builder.ci.yml
+          echo "=== effective config ==="
+          cat electron-builder.ci.yml
+          npx --yes electron-builder@latest \
+            --win portable --x64 \
+            --config electron-builder.ci.yml \
+            --publish never 2>&1 | tee pack.log
+
+      - name: 失败日志写入 Summary
+        if: failure()
+        shell: bash
+        run: |
+          {
+            echo "### electron-builder 失败日志（末尾 120 行）"
+            echo '```text'
+            tail -n 120 pack.log 2>/dev/null || echo "(未生成 pack.log)"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: 校验产物
-        shell: cmd
+        shell: bash
         run: |
-          dir release-ci
-          if not exist "release-ci\*.exe" (
-            echo [ERROR] no exe produced
-            exit /b 1
-          )
+          ls -lh release || true
+          test -n "$(find release -maxdepth 1 -name '*.exe' -print -quit)"
 
       - name: 上传安装包
         uses: actions/upload-artifact@v4
         with:
           name: MirrorField-portable-x64
-          path: mirrorfield/release-ci/*.exe
+          path: mirrorfield/release/*.exe
           if-no-files-found: error
           retention-days: 30
 

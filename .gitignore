@@ -10,6 +10,9 @@ mirrorfield/release-*/
 mirrorfield/release-retry-*/
 mirrorfield/release-ci/
 
+# 打包时生成的临时配置（electronVersion 由 CI 写入）
+mirrorfield/electron-builder.ci.yml
+
 # 图标中间文件（只保留 icon.ico / icon.png）
 mirrorfield/build/icon-src.png
 mirrorfield/build/icon-[0-9]*.png
