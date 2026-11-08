@@ -25,3 +25,8 @@ Thumbs.db
 .idea/
 .vscode/*
 !.vscode/extensions.json
+
+# 本地打包产物测试目录
+.reltest/
+.eb-cache/
+.ci-test/

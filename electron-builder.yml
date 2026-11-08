@@ -7,8 +7,10 @@
 # 注意：项目不引入 electron 依赖，运行时版本一律通过 -c.electronVersion 传入。
 
 appId: cn.xhchain.desktop
-productName: 星火链证 XH-CHAIN
-copyright: Copyright © 2026 星火链证 XH-CHAIN
+# productName 保持 ASCII：中文会写进 NSIS 脚本与 exe 版本资源，在 CI 代码页下易出错。
+# 窗口标题等界面文案由 electron/main.cjs 中的中文 title 控制，用户看到的仍是「星火链证 XH-CHAIN」。
+productName: XH-CHAIN
+copyright: Copyright © 2026 XH-CHAIN
 
 directories:
   buildResources: build

@@ -20,14 +20,17 @@ jobs:
     env:
       # 跳过代码签名（未配置证书时避免报错）
       CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      # Electron 运行时与 electron-builder 二进制均走镜像，避免下载超时
+      ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
+      ELECTRON_BUILDER_BINARIES_MIRROR: https://npmmirror.com/mirrors/electron-builder-binaries/
     steps:
       - name: 检出代码
         uses: actions/checkout@v4
 
-      - name: 安装 Node.js 20
+      - name: 安装 Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
 
       - name: 安装依赖
         run: npm install --no-audit --no-fund
@@ -43,18 +46,40 @@ jobs:
           if ([string]::IsNullOrWhiteSpace($v)) {
             $v = ((npm view electron version) -join '').Trim()
           }
-          Write-Host "使用 Electron 版本: $v"
+          if ([string]::IsNullOrWhiteSpace($v)) {
+            throw '无法解析 Electron 版本'
+          }
+          Write-Host "使用 Electron 版本: [$v]"
           "version=$v" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
 
       - name: 打包 Windows 便携版
+        id: pack
         shell: pwsh
-        run: >
-          npx --yes electron-builder@latest --win portable --x64
-          --config electron-builder.yml --publish never
-          -c.electronVersion=${{ steps.electron.outputs.version }}
-          -c.directories.output=release
+        run: |
+          $v = "${{ steps.electron.outputs.version }}"
+          Write-Host "electronVersion = [$v]"
+          npx --yes electron-builder@latest --win portable --x64 `
+            --config electron-builder.yml --publish never `
+            "-c.electronVersion=$v" `
+            "-c.directories.output=release" 2>&1 | Tee-Object -FilePath build.log
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: 输出失败日志到 Summary
+        if: failure()
+        shell: pwsh
+        run: |
+          if (Test-Path build.log) {
+            $tail = Get-Content build.log -Tail 120 -Raw
+          } else {
+            $tail = '(build.log 未生成，打包步骤可能在启动前即失败)'
+          }
+          Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value '### 打包失败日志（尾部 120 行）'
+          Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value '```'
+          Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value $tail
+          Add-Content -Path $env:GITHUB_STEP_SUMMARY -Value '```'
 
       - name: 上传打包产物
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: xh-chain-windows-portable
