@@ -13,7 +13,7 @@
  * 用法：npm run dist:win   （可选参数 -- --nsis 改打安装包）
  */
 import { spawnSync } from 'node:child_process'
-import { mkdirSync } from 'node:fs'
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
 
@@ -59,6 +59,12 @@ const targetArgs = targets.length ? targets : ['--win', 'portable', '--x64']
 
 const ELECTRON_BUILDER_VERSION = process.env.ELECTRON_BUILDER_VERSION || '26.18.0'
 
+// 关键：在 Windows 上用 `-c.xxx=yyy` 覆盖配置，会被 electron-builder 误判成“配置文件路径”
+// （报错 ENOENT ...\.directories.output=release），所以这里生成一份临时配置，命令行只传 --config。
+const baseCfg = readFileSync(path.join(root, 'electron-builder.yml'), 'utf8')
+const ciCfg = baseCfg.replace(/^(\s*)output:.*$/m, `$1output: ${outDir}`) + `\nelectronVersion: ${electronVersion}\n`
+writeFileSync(path.join(root, 'electron-builder.ci.yml'), ciCfg)
+
 console.log(`▶ [4/4] electron-builder@${ELECTRON_BUILDER_VERSION} ${targetArgs.join(' ')} → ./${outDir}`)
 run(
   npxCmd,
@@ -66,9 +72,8 @@ run(
     '--yes',
     `electron-builder@${ELECTRON_BUILDER_VERSION}`,
     ...targetArgs,
-    '--config', 'electron-builder.yml',
-    `-c.electronVersion=${electronVersion}`,
-    `-c.directories.output=${outDir}`,
+    '--config', 'electron-builder.ci.yml',
+    '--publish', 'never',
   ],
   { env: mirrorEnv },
 )

@@ -19,3 +19,7 @@ Thumbs.db
 .env
 .env.*
 !.env.example
+
+# 打包脚本生成的临时配置
+electron-builder.ci.yml
+pack.log

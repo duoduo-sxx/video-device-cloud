@@ -64,7 +64,11 @@ jobs:
       - name: 打包 Windows 便携版
         shell: pwsh
         run: |
-          npx --yes "electron-builder@${{ env.ELECTRON_BUILDER_VERSION }}" --win portable --x64 --config electron-builder.yml "-c.electronVersion=${{ steps.electron.outputs.version }}" -c.directories.output=release --publish never *> pack.log
+          $ver = '${{ steps.electron.outputs.version }}'
+          # 关键：Windows 下 -c.xxx=yyy 会被当成“配置文件路径”解析（ENOENT .directories.output=release），
+          # 因此改为把 electronVersion 写进生成出来的配置，命令行只传 --config。
+          (Get-Content electron-builder.yml -Raw) + "`nelectronVersion: $ver`n" | Set-Content electron-builder.ci.yml -Encoding utf8
+          npx --yes "electron-builder@${{ env.ELECTRON_BUILDER_VERSION }}" --win portable --x64 --config electron-builder.ci.yml --publish never *> pack.log
           $code = $LASTEXITCODE
           Write-Host "electron-builder exit=$code"
           Get-Content pack.log -Tail 80
