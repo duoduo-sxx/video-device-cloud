@@ -20,6 +20,7 @@ npm run build    # 产出 dist/，可直接 file:// 打开
 | `vite build`（3621 modules） | 通过，产物 `dist/`（`base: './'`，`file://` 可直接打开） |
 | Mock 数据层 | 21 个集合、约 3900 条记录，外键校验 0 异常 |
 | `api.*` 数据访问层 58 个方法 | 全部调用通过（含分页、筛选、状态流转、验收提交） |
+| GitHub Actions 打包（`windows-latest` / Node 22 / Electron 45.2.3） | 通过，6m38s，产物 `MirrorField-portable-x64` 111 MB |
 
 打包体积（未压缩 / gzip）：antd 2.5 MB / 556 KB、echarts 2.8 MB / 632 KB、three 920 KB / 183 KB。开启 `npm run build` 默认压缩后约为上表 1/3。
 
@@ -93,14 +94,14 @@ src/
 
 ## 桌面端打包（Windows 便携版）
 
-项目**不声明** `electron` / `electron-builder` 依赖：运行时由 electron-builder 临时下载，版本通过 `-c.electronVersion` 传入，`package.json` 里保持零桌面端依赖。
+项目**不声明** `electron` / `electron-builder` 依赖：运行时由 electron-builder 临时下载，版本在打包时写入配置文件，`package.json` 里保持零桌面端依赖。
 
 | 文件 | 作用 |
 | --- | --- |
 | `electron/main.cjs` | 主进程：单实例、去掉菜单、拦截外链与新窗口、`loadFile('dist/index.html')` |
 | `electron-builder.yml` | portable / x64 / asar，只打包 `dist` 与 `electron` |
 | `build/icon.ico`、`build/icon.png` | 独立设计的应用图标（256/128/64/48/32/16 六尺寸），不使用 Electron 默认图标 |
-| `pack-win.bat` | 一键脚本，含镜像变量、构建、取 Electron 版本、打包 |
+| `pack-win.bat` | 一键脚本，含镜像变量、构建、取 Electron 版本、生成配置、打包 |
 
 Windows 上双击 `pack-win.bat` 即可，等价于：
 
@@ -111,13 +112,16 @@ set "ELECTRON_BUILDER_BINARIES_MIRROR=https://npmmirror.com/mirrors/electron-bui
 npm install
 npm run build
 for /f "delims=" %i in ('npm view electron version') do set "ELECTRON_VERSION=%i"
-set "PACK_OUTPUT=release-retry-%RANDOM%"
-npx --yes electron-builder@latest --win portable --x64 --config electron-builder.yml -c.electronVersion=%ELECTRON_VERSION% -c.directories.output=%PACK_OUTPUT%
+copy /y electron-builder.yml electron-builder.ci.yml >nul
+(echo electronVersion: %ELECTRON_VERSION%)>> electron-builder.ci.yml
+npx --yes electron-builder@latest --win portable --x64 --config electron-builder.ci.yml --publish never
 ```
 
-产物：`release-retry-<随机数>/MirrorField-1.0.0-portable-x64.exe`，单文件双击运行，不写注册表。
+> **不要再用 `-c.electronVersion=...` 这种写法**。electron-builder 26（`@latest` 现在解析到的版本）已移除 `-c.key=value` 覆盖语法，会把整串 `.directories.output=...` 当成配置文件路径，报 `ENOENT: open '...\.directories.output=...'`。所有参数一律写进 `electron-builder.yml`，动态值（Electron 版本）合并进临时副本 `electron-builder.ci.yml` 再传给 `--config`。
 
-CI：`.github/workflows/mirrorfield.yml`（GitHub Actions，`windows-latest`），在 Actions 页手动 **Run workflow** 或打 `v*` 标签触发，产物在该次运行的 Artifacts 里。
+产物：`release/MirrorField-1.0.0-portable-x64.exe`，单文件双击运行，不写注册表。
+
+CI：`.github/workflows/mirrorfield.yml`（GitHub Actions，`windows-latest`，Node 22），在 Actions 页手动 **Run workflow** 或打 `v*` 标签触发，产物在该次运行的 Artifacts 里（`MirrorField-portable-x64`，约 111 MB）。
 
 ## 已知限制
 
