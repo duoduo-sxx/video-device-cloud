@@ -44,24 +44,18 @@ jobs:
           node-version: '22'
           cache: npm
 
-      # 打包命令与本地 cmd 打包命令保持一致（run 块写入临时 .cmd 文件执行，for 变量需转义为 %%i）
+      # 打包命令与本地 cmd 打包命令保持一致（run 块写入临时 .cmd 文件执行，for 变量需转义为 %%i；
+      # 注意 cmd 脚本里不能使用 call :label 技巧——Actions 的 LF 换行会让 cmd 找不到批处理标签）
       - name: 打包（Windows 便携版，cmd）
         id: pack
         shell: cmd
         env:
-          EB_VERSION: 25.1.8
           INPUT_ELECTRON_VERSION: ${{ github.event.inputs.electron_version }}
         run: |
-          call :main > ci-build.log 2>&1
-          exit /b %ERRORLEVEL%
+          echo ====== SpaceScape Windows portable build (run #%GITHUB_RUN_NUMBER%) ======
 
-          :main
-          echo ====== SpaceScape Windows portable build ======
-          echo electron-builder=%EB_VERSION% run=#%GITHUB_RUN_NUMBER%
-          echo.
-
-          npm install
-          npm run build
+          npm install || exit /b 1
+          npm run build || exit /b 1
 
           for /f "delims=" %%i in ('npm view electron version') do set "ELECTRON_VERSION=%%i"
           if not "%INPUT_ELECTRON_VERSION%"=="" set "ELECTRON_VERSION=%INPUT_ELECTRON_VERSION%"
@@ -69,13 +63,15 @@ jobs:
 
           set "PACK_OUTPUT=release-retry-%RANDOM%"
           echo PACK_OUTPUT=%PACK_OUTPUT%
-          npx --yes electron-builder@%EB_VERSION% --win portable --x64 --config electron-builder.yml -c.electronVersion=%ELECTRON_VERSION% -c.directories.output=%PACK_OUTPUT%
+          npx --yes electron-builder@latest --win portable --x64 --config electron-builder.yml -c.electronVersion=%ELECTRON_VERSION% -c.directories.output=%PACK_OUTPUT% > ci-build.log 2>&1
+          if errorlevel 1 (
+            echo ====== electron-builder 失败，完整日志如下 ======
+            type ci-build.log
+            exit /b 1
+          )
 
-          set "EC=%ERRORLEVEL%"
           echo ====== artifacts ======
           dir /s /b "%PACK_OUTPUT%"
-          echo ====== exit code %EC% ======
-          exit /b %EC%
 
       - name: 失败时把日志尾部转成 annotation
         if: failure()
