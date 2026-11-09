@@ -1,0 +1,71 @@
+name: 智能交互与理解软件系统与技术服务
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - master
+      - feature/iiup-web
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: iiup-portable-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: pwsh
+
+jobs:
+  windows-portable:
+    name: Windows portable x64
+    runs-on: windows-latest
+    env:
+      ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
+      NPM_CONFIG_ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
+      ELECTRON_BUILDER_BINARIES_MIRROR: https://npmmirror.com/mirrors/electron-builder-binaries/
+      NPM_CONFIG_FUND: 'false'
+      NPM_CONFIG_AUDIT: 'false'
+
+    steps:
+      - name: 拉取代码
+        uses: actions/checkout@v4
+
+      - name: 安装 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: 安装依赖
+        run: npm install
+
+      - name: 类型检查
+        run: npm run typecheck
+
+      - name: 构建前端产物
+        run: npm run build
+
+      - name: 解析 Electron 版本
+        run: |
+          $version = (npm view electron version).Trim()
+          "ELECTRON_VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          Write-Host "Electron version: $version"
+
+      - name: 打包 Windows 免安装版
+        run: |
+          $output = "release-retry-${{ github.run_number }}"
+          npx --yes electron-builder@latest --win portable --x64 --config electron-builder.yml -c.electronVersion=$env:ELECTRON_VERSION -c.directories.output=$output
+
+      - name: 上传安装包
+        uses: actions/upload-artifact@v4
+        with:
+          name: IIUP-portable-x64
+          path: release-retry-*/IIUP-*-portable-x64.exe
+          if-no-files-found: error
+          retention-days: 30

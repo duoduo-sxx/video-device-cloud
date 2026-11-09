@@ -1,0 +1,38 @@
+# electron-builder 配置：Windows 免安装绿色版（portable）
+# 不声明 electron 依赖，构建时通过 -c.electronVersion 指定运行时版本
+appId: com.iiup.platform
+productName: 智能交互与理解软件系统与技术服务
+copyright: Copyright © 2026 IIUP
+
+directories:
+  output: release
+  buildResources: build
+
+# 仅打包前端产物与主进程脚本；前端依赖已由 Vite 打包进 bundle，无需再携带 node_modules
+files:
+  - dist/**/*
+  - electron/**/*
+  - build/icon.ico
+  - package.json
+  - '!node_modules/**/*'
+  - '!**/*.map'
+
+asar: true
+compression: normal
+npmRebuild: false
+buildDependenciesFromSource: false
+electronDownload:
+  mirror: https://npmmirror.com/mirrors/electron/
+
+win:
+  icon: build/icon.ico
+  target:
+    - target: portable
+      arch:
+        - x64
+  artifactName: IIUP-${version}-portable-x64.${ext}
+  requestedExecutionLevel: asInvoker
+  legalTrademarks: IIUP
+
+portable:
+  artifactName: IIUP-${version}-portable-x64.${ext}
