@@ -52,16 +52,27 @@ jobs:
           Write-Host "使用 Electron 版本: [$v]"
           "version=$v" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
 
+      - name: 临时安装 Electron 运行时（不写入 package.json）
+        shell: pwsh
+        run: |
+          $v = "${{ steps.electron.outputs.version }}"
+          Write-Host "临时安装 electron@$v（--no-save，仓库保持零 electron 依赖）"
+          npm install --no-save "electron@$v" --no-audit --no-fund
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $installed = ((Get-Content node_modules/electron/package.json -Raw | ConvertFrom-Json).version)
+          Write-Host "已安装 electron 版本: [$installed]"
+
       - name: 打包 Windows 便携版
         id: pack
         shell: pwsh
         run: |
-          $v = "${{ steps.electron.outputs.version }}"
-          Write-Host "electronVersion = [$v]"
+          # 说明：不在命令行使用 -c.xxx=yyy 形式的参数覆盖。
+          # Windows 下经 PowerShell/npx 多层转发时含 = 的参数会被拆散，
+          # electron-builder 会把 ".directories.output=release" 当作配置文件路径导致 ENOENT。
+          # Electron 版本改由上一步临时安装的 node_modules/electron 自动检测；
+          # 输出目录使用 electron-builder.yml 中的默认 release。
           npx --yes electron-builder@latest --win portable --x64 `
-            --config electron-builder.yml --publish never `
-            "-c.electronVersion=$v" `
-            "-c.directories.output=release" 2>&1 | Tee-Object -FilePath build.log
+            --config electron-builder.yml --publish never 2>&1 | Tee-Object -FilePath build.log
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: 输出失败日志到 Summary
