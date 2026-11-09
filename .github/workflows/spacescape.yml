@@ -70,8 +70,9 @@ jobs:
             exit /b 1
           )
 
-          echo ====== artifacts ======
-          dir /s /b "%PACK_OUTPUT%"
+          echo ====== artifacts ====== >> ci-build.log
+          dir /s /b "%PACK_OUTPUT%" >> ci-build.log 2>&1
+          type ci-build.log
 
       - name: 失败时把日志尾部转成 annotation
         if: failure()
@@ -91,7 +92,7 @@ jobs:
           $tail = if (Test-Path ci-build.log) { Get-Content ci-build.log -Tail 500 | Out-String } else { "no build log captured" }
           $header = "run: #${{ github.run_number }} (id ${{ github.run_id }})`nresult: ${{ job.status }}`ntime: $(Get-Date -Format o)`n`n"
           Set-Content -Path .ci/last-run.log -Value ($header + $tail) -Encoding utf8
-          git add .ci/last-run.log
+          git add -f .ci/last-run.log
           git commit -m "ci: 记录 SpaceScape 打包运行 #${{ github.run_number }} [skip ci]"
           if ($LASTEXITCODE -ne 0) { Write-Output "commit skipped (nothing changed)"; exit 0 }
           git pull --rebase origin spacescape-console 2>&1 | Out-String | Write-Output
@@ -108,6 +109,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: SpaceScape-portable-x64
-          path: release-retry-*/**/*.exe
+          path: |
+            release-retry-*/*.exe
+            release-retry-*/*/*.exe
           if-no-files-found: error
           retention-days: 14
