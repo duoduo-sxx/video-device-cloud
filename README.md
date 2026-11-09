@@ -27,15 +27,30 @@ npx --yes electron-builder@latest --win portable --x64 --config electron-builder
 ### GitHub Actions 云端打包
 
 workflow：`.github/workflows/xh-chain-desktop.yml`（名称「星火链证 XH-CHAIN」）。
-在 Actions 页面手动触发（可填 Electron 版本），或推送 `v*` 标签自动触发；
-完成后在 Run 页面的 Artifacts 下载 `xh-chain-windows-portable`。
+
+- **手动触发**：仓库 → Actions → 「星火链证 XH-CHAIN」→ Run workflow（可填 Electron 版本，留空自动取最新稳定版）
+- **标签触发**：推送 `xh-chain-v*` 形式的标签（用项目专属前缀，避免与同仓库其他项目的 `v*` 标签互相误触发）
+- 完成后在 Run 页面的 Artifacts 下载 `xh-chain-windows-portable`（约 106 MB）
+
+CI 与本机打包的差异（重要）：CI 中**不使用** `-c.electronVersion=...` / `-c.directories.output=...`
+形式的参数覆盖 —— Windows 下经 PowerShell → npx 多层转发时，含 `=` 的参数会被拆散，
+electron-builder 会把 `.directories.output=release` 误当成配置文件路径并报
+`ENOENT: no such file or directory`。因此 CI 改为：
+
+1. `npm install --no-save electron@<版本>` 临时安装运行时（**不写入 package.json / lock，仓库始终零 electron 依赖**）
+2. `npx electron-builder --win portable --x64 --config electron-builder.yml --publish never`
+   —— 版本由 node_modules 自动检测，输出目录用 yml 里的默认 `release`，命令行不含任何 `=` 参数
+
+本机在 **cmd.exe** 下执行上面的命令不受此问题影响（`%VAR%` 展开后由 cmd 直接转发）。
 
 ### 桌面端实现说明
 
 - `electron/main.cjs`：主进程。注册 `app://` 自定义协议加载 `dist/`（ES Module 在 `file://`
   下会被 CORS 拦截，因此必须用自定义协议），单实例锁、外链转系统浏览器、F12 开发者工具。
 - `electron-builder.yml`：`files` 只含 `dist`、`electron` 与图标，`asar: false`，
-  不打包任何 node_modules（前端已全量 bundle）。
+  不打包任何 node_modules（前端已全量 bundle）。`productName` 保持 ASCII（`XH-CHAIN`）——
+  中文会写进 NSIS 脚本与 exe 版本资源，在 CI 代码页下易出错；窗口标题等界面文案由
+  `main.cjs` 的中文 `title` 控制，用户看到的仍是「星火链证 XH-CHAIN」。
 - `build/icon.png` / `build/icon.svg`：自绘应用图标（双环相扣），非 Electron 默认图标。
 - 产物命名：`xh-chain-<版本>-portable-x64.exe`。
 
