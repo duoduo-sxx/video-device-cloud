@@ -54,8 +54,9 @@ jobs:
         run: |
           echo ====== SpaceScape Windows portable build (run #%GITHUB_RUN_NUMBER%) ======
 
-          npm install || exit /b 1
-          npm run build || exit /b 1
+          rem 注意：npm/npx 本质是 .cmd 批处理，批处理里调用批处理必须加 call，否则控制权永久转移、后续命令不再执行
+          call npm install || exit /b 1
+          call npm run build || exit /b 1
 
           for /f "delims=" %%i in ('npm view electron version') do set "ELECTRON_VERSION=%%i"
           if not "%INPUT_ELECTRON_VERSION%"=="" set "ELECTRON_VERSION=%INPUT_ELECTRON_VERSION%"
@@ -63,7 +64,7 @@ jobs:
 
           set "PACK_OUTPUT=release-retry-%RANDOM%"
           echo PACK_OUTPUT=%PACK_OUTPUT%
-          npx --yes electron-builder@latest --win portable --x64 --config electron-builder.yml -c.electronVersion=%ELECTRON_VERSION% -c.directories.output=%PACK_OUTPUT% > ci-build.log 2>&1
+          call npx --yes electron-builder@latest --win portable --x64 --config electron-builder.yml -c.electronVersion=%ELECTRON_VERSION% -c.directories.output=%PACK_OUTPUT% > ci-build.log 2>&1
           if errorlevel 1 (
             echo ====== electron-builder 失败，完整日志如下 ======
             type ci-build.log
