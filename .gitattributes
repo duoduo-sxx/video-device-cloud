@@ -1,0 +1,9 @@
+* text=auto
+
+# Windows 批处理需 CRLF
+*.cmd text eol=crlf
+*.bat text eol=crlf
+
+# 二进制资源不做换行转换
+*.ico binary
+*.png binary
