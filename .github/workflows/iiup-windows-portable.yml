@@ -17,10 +17,6 @@ concurrency:
   group: iiup-portable-${{ github.ref }}
   cancel-in-progress: true
 
-defaults:
-  run:
-    shell: pwsh
-
 jobs:
   windows-portable:
     name: Windows portable x64
@@ -39,7 +35,7 @@ jobs:
       - name: 安装 Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
 
       - name: 安装依赖
@@ -51,31 +47,25 @@ jobs:
       - name: 构建前端产物
         run: npm run build
 
-      - name: 解析 Electron 版本
-        run: |
-          $version = (npm view electron version).Trim()
-          if (-not $version) { throw 'Failed to resolve electron version from npm registry' }
-          "ELECTRON_VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
-          Write-Host "Electron version: $version"
-
       - name: 缓存 Electron 与打包工具
         uses: actions/cache@v4
         with:
           path: |
             ${{ env.LOCALAPPDATA }}\electron\Cache
             ${{ env.LOCALAPPDATA }}\electron-builder\Cache
-          key: electron-cache-${{ runner.os }}-${{ env.ELECTRON_VERSION }}
+          key: electron-cache-${{ runner.os }}-v2
           restore-keys: |
             electron-cache-${{ runner.os }}-
 
+      # 打包命令与本地 scripts/pack-win.cmd 完全一致（cmd 语法），
+      # 避免 PowerShell 对 -c.xxx=yyy 参数的改写问题
       - name: 打包 Windows 免安装版
+        shell: cmd
         run: |
-          if (-not $env:ELECTRON_VERSION) {
-            $env:ELECTRON_VERSION = (npm view electron version).Trim()
-          }
-          $output = "release-retry-${{ github.run_number }}"
-          Write-Host "Packaging with electron $env:ELECTRON_VERSION -> $output"
-          npx --yes electron-builder@latest --win portable --x64 --config electron-builder.yml -c.electronVersion=$env:ELECTRON_VERSION -c.directories.output=$output
+          for /f "delims=" %%i in ('npm view electron version') do set "ELECTRON_VERSION=%%i"
+          echo Electron version: %ELECTRON_VERSION%
+          set "PACK_OUTPUT=release-retry-%RANDOM%"
+          npx --yes electron-builder@latest --win portable --x64 --config electron-builder.yml -c.electronVersion=%ELECTRON_VERSION% -c.directories.output=%PACK_OUTPUT% --publish never
 
       - name: 上传安装包
         uses: actions/upload-artifact@v4
