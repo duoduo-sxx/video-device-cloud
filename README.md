@@ -266,7 +266,7 @@ npx --yes electron-builder@latest --win portable --x64 --config electron-builder
 产物：`%PACK_OUTPUT%\AdLens-1.0.0-portable-x64.exe`，双击即用，无需安装。
 
 ### GitHub Actions 自动打包
-`.github/workflows/build-windows-portable.yml`：推送到 `yunshu-platform` 分支或手动 `workflow_dispatch` 触发，`windows-latest` 上跑 `npm install → npm run build → electron-builder`（已内置三个国内镜像环境变量），产物上传为 artifact `AdLens-portable-win-x64`。
+`.github/workflows/build-portable.yml`：推送到 `yunshu-platform` 分支或手动 `workflow_dispatch` 触发，`windows-latest` 上跑 `npm install → npm run build → electron-builder`（已内置三个国内镜像环境变量），产物上传为 artifact `AdLens-portable-win-x64`。
 
 ---
 

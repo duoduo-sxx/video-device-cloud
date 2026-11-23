@@ -1,6 +1,7 @@
 name: Build Windows Portable
 
 # 推送到 yunshu-platform 分支时自动打包，也可在 Actions 页面手动触发
+# 注：原 build-windows-portable.yml 被手动禁用，故改用新路径恢复自动触发
 on:
   push:
     branches: [yunshu-platform]
