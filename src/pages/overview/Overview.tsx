@@ -13,7 +13,7 @@ import {
 import { Card, CardHeader, PageHeader, StatCard } from '@/components/ui/Card';
 import { Badge, DeltaBadge, LevelBadge } from '@/components/ui/Badge';
 import { Donut, StackedArea } from '@/components/charts';
-import { PLATFORMS, PLATFORM_MAP, BRAND } from '@/mocks/platforms';
+import { PLATFORMS, PLATFORM_MAP, BRAND, ACCOUNTS } from '@/mocks/platforms';
 import {
   CURRENT_PERIOD,
   PREV_PERIOD,
@@ -25,7 +25,7 @@ import { ANOMALIES, SUGGESTIONS } from '@/mocks/insights';
 import { SYNC_JOBS, QUALITY_CHECKS, DATA_TABLES } from '@/mocks/pipeline';
 import { accountSummaries } from '@/mocks/daily';
 import { cpa, change, cpa as cpaOf, ctr, cvr, roi, r2 } from '@/lib/metrics';
-import { money, num, pct, wan } from '@/lib/format';
+import { int, money, num, pct, wan } from '@/lib/format';
 
 const CUR = totalMetrics(CURRENT_PERIOD);
 const PREV = totalMetrics(PREV_PERIOD);
@@ -67,7 +67,7 @@ export default function Overview() {
     <>
       <PageHeader
         title="投放总览"
-        desc={`${BRAND.owner} · 6 个投放平台 12 个账户 · 数据截至 2026-10-31 08:12 · 与平台后台消耗差异 ≤ 0.31%`}
+        desc={`${BRAND.owner} · 6 个投放平台 ${ACCOUNTS.length} 个账户 · 数据截至 2026-10-31 08:12 · 与平台后台消耗差异 ≤ 0.31%`}
         breadcrumb="2026-10 账期（对比 2026-09）"
         actions={
           <>
@@ -86,6 +86,13 @@ export default function Overview() {
           </>
         }
       />
+
+      {/* 数据来源说明：区分真实快照与演示派生 */}
+      <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-ctl border border-line bg-[#F9FAFB] px-4 py-2.5 text-2xs text-ink-3">
+        <span className="font-medium text-ink-2">数据来源</span>
+        <span className="flex items-center gap-1.5"><Badge tone="green" dot>真实</Badge> 巨量千川账户列表：595 个账户 / 43 个有消耗，消耗、订单、成交金额、余额与源表逐账户一致</span>
+        <span className="flex items-center gap-1.5"><Badge tone="amber" dot>派生</Badge> 源表无日期/曝光/点击/计划字段，日粒度与下钻明细按确定性规则拆分，仅用于流程演示</span>
+      </div>
 
       {/* 数据链路演示条 */}
       <Card className="mb-4 !p-0" pad={false}>
@@ -131,10 +138,10 @@ export default function Overview() {
         />
         <StatCard
           label="下单数"
-          value={num(CUR.conversions)}
+          value={int(CUR.conversions)}
           unit="单"
           delta={change(CUR.conversions, PREV.conversions)}
-          hint={`支付成功 ${num(CUR.paidOrders)} 单`}
+          hint={`支付成功 ${int(CUR.paidOrders)} 单`}
         />
         <StatCard
           label="成交金额"
@@ -201,7 +208,7 @@ export default function Overview() {
             desc="点账户进入计划与素材明细"
             extra={
               <Link to="/connect/accounts" className="text-xs text-primary hover:underline">
-                全部 12 个账户
+                全部 {ACCOUNTS.length} 个账户
               </Link>
             }
           />

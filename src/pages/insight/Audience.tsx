@@ -537,7 +537,7 @@ export default function Audience() {
       <Card>
         <CardHeader
           title="同账户跨广告人群对比"
-          desc="同样投户外，不同广告吸引的人并不一样 —— 这张表用年龄 TGI 横向对比消耗 Top 8 的广告，找「谁在抢同一批人」"
+          desc="不同广告吸引的人并不一样 —— 这张表用年龄 TGI 横向对比消耗 Top 8 的广告，找「谁在抢同一批人」"
           extra={<Badge tone="gray">TGI ≥ 140 为强偏向</Badge>}
         />
         <div className="mt-3 overflow-x-auto">

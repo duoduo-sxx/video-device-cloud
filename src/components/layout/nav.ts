@@ -35,7 +35,7 @@ export interface NavGroup {
 export const BRAND = {
   name: '投见',
   en: 'AdLens',
-  tagline: '跨平台广告数据智能平台',
+  tagline: '跨平台数据智能平台',
   owner: '栖野户外 OUTLAND',
 };
 

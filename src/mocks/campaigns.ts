@@ -1,5 +1,7 @@
 import type { AdPlan, Creative, Material, MaterialType, PlanStatus } from '@/types';
-import { ACCOUNTS } from './platforms';
+import { ACCOUNTS, ACCOUNT_MAP } from './platforms';
+import { QIANCHUAN_ACTIVE } from './qianchuan';
+import { hash, rnd } from './seed';
 import { metricsOfAccount, splitAccountMetrics } from './daily';
 import { addMetrics, r2 } from '@/lib/metrics';
 
@@ -48,10 +50,39 @@ const PLAN_DEFS: PlanDef[] = [
   { id: 'P-6011', accountId: 'ACC-601', name: 'UP主·徒步场景植入', objective: '种草', bidType: 'CPM', bid: 18, dailyBudget: 3000, status: 'delivering', weight: 1, startDate: '2026-09-19' },
 ];
 
+/* ------------------------------------------------------------------ *
+ * 真实千川账户的计划：源表没有计划字段，这里按账户消耗规模确定性派生，
+ * 但每项计划的消耗/订单/GMV 仍从真实账户月汇总拆分，Σ计划 === 账户。
+ * ------------------------------------------------------------------ */
+const REAL_PLAN_DEFS: PlanDef[] = QIANCHUAN_ACTIVE.flatMap((r) => {
+  const acc = ACCOUNT_MAP[r.id];
+  const n = r.spend >= 1000000 ? 3 : r.spend >= 300000 ? 2 : 1;
+  const raw = Array.from({ length: n }, (_, i) => 0.7 + rnd(hash(`${r.id}|plan|${i}`)) * 0.6);
+  const sum = raw.reduce((a, b) => a + b, 0);
+  const names =
+    n === 3
+      ? [`${r.industry2}·主推成交`, `${r.industry2}·直播承接`, `${r.industry2}·达人追投`]
+      : n === 2
+        ? [`${r.industry2}·主推成交`, `${r.industry2}·加购蓄水`]
+        : [`${r.industry2}·全域成交`];
+  return raw.map((w, i) => ({
+    id: `QC-P-${r.id}-${i + 1}`,
+    accountId: r.id,
+    name: names[i],
+    objective: acc.objective,
+    bidType: (i === 2 ? 'CPC' : 'oCPM') as AdPlan['bidType'],
+    bid: Math.max(1, Math.round((r.cpa * (0.8 + i * 0.1)) * 100) / 100),
+    dailyBudget: Math.round((acc.dailyBudget * w) / sum),
+    status: (r.roi < 2 && i === 0 ? 'limited' : 'delivering') as PlanStatus,
+    weight: w / sum,
+    startDate: i === 2 ? '2026-10-18' : i === 1 ? '2026-10-06' : '2026-09-05',
+  }));
+});
+
 /** 计划列表：账户月汇总按权重拆分，保证 Σ计划 === 账户 */
 export const AD_PLANS: AdPlan[] = (() => {
   const byAccount = new Map<string, PlanDef[]>();
-  for (const d of PLAN_DEFS) {
+  for (const d of [...PLAN_DEFS, ...REAL_PLAN_DEFS]) {
     const list = byAccount.get(d.accountId) ?? [];
     list.push(d);
     byAccount.set(d.accountId, list);
@@ -106,6 +137,13 @@ const MATERIAL_DEFS: MaterialDef[] = [
   { id: 'M-12', name: '双 11 预售清单', type: '图文', duration: 0, angle: '促销利益点', fatigue: 0.15 },
   { id: 'M-13', name: '徒步路线 vlog', type: '达人视频', duration: 45, angle: '真实体验', fatigue: 0.29 },
   { id: 'M-14', name: '品牌词搜索承接图', type: '搜索图文', duration: 0, angle: '品牌词承接', fatigue: 0.12 },
+  // 通用素材池：真实千川账户覆盖多个行业，不能套用户外品类素材
+  { id: 'M-15', name: '商品卖点口播-15s', type: '短视频', duration: 15, angle: '卖点直给', fatigue: 0.23 },
+  { id: 'M-16', name: '直播间福利切片-20s', type: '直播切片', duration: 20, angle: '价格锚点', fatigue: 0.41 },
+  { id: 'M-17', name: '达人开箱实测-25s', type: '达人视频', duration: 25, angle: '真实体验', fatigue: 0.28 },
+  { id: 'M-18', name: '促销利益点图文', type: '图文', duration: 0, angle: '促销利益点', fatigue: 0.16 },
+  { id: 'M-19', name: '场景化短视频-18s', type: '短视频', duration: 18, angle: '使用场景', fatigue: 0.34 },
+  { id: 'M-20', name: '搜索承接通用图', type: '搜索图文', duration: 0, angle: '搜索承接', fatigue: 0.11 },
 ];
 
 /** 创意（计划下的具体投放单元），2 条/计划，权重 0.6/0.4 */
@@ -151,6 +189,20 @@ const CREATIVE_DEFS: CreativeDef[] = [
   { id: 'C-6011B', planId: 'P-6011', name: 'UP主-装备清单', materialId: 'M-06', status: 'active', weight: 0.3 },
 ];
 
+/* 真实千川计划的创意：素材从通用池按计划哈希确定性分配 */
+const REAL_CREATIVE_MATERIALS = ['M-15', 'M-16', 'M-17', 'M-18', 'M-19', 'M-20'];
+const REAL_CREATIVE_DEFS: CreativeDef[] = AD_PLANS.filter((p) => p.id.startsWith('QC-P-')).flatMap((p) => {
+  const seed = hash(p.id);
+  const acc = ACCOUNT_MAP[p.accountId];
+  const isLive = p.name.includes('直播');
+  const main = isLive ? 'M-16' : REAL_CREATIVE_MATERIALS[Math.floor(rnd(seed) * REAL_CREATIVE_MATERIALS.length)];
+  const second = REAL_CREATIVE_MATERIALS[Math.floor(rnd(seed + 1) * REAL_CREATIVE_MATERIALS.length)];
+  return [
+    { id: `QC-C-${p.id}-A`, planId: p.id, name: `${acc.name.slice(0, 10)}·${isLive ? '直播福利' : '卖点口播'}`, materialId: main, status: 'active' as const, weight: 0.68 },
+    { id: `QC-C-${p.id}-B`, planId: p.id, name: `${acc.name.slice(0, 10)}·${isLive ? '切片追投' : '达人实测'}`, materialId: second === main ? 'M-20' : second, status: 'active' as const, weight: 0.32 },
+  ];
+});
+
 /** 素材衰减曲线（7 日 CTR 指数，1.00 为上线首日） */
 function decayCurve(fatigue: number): number[] {
   return Array.from({ length: 7 }, (_, i) => r2(1 - fatigue * (i / 6) ** 0.85));
@@ -159,7 +211,7 @@ function decayCurve(fatigue: number): number[] {
 export const CREATIVES: Creative[] = (() => {
   const out: Creative[] = [];
   const byPlan = new Map<string, CreativeDef[]>();
-  for (const c of CREATIVE_DEFS) {
+  for (const c of [...CREATIVE_DEFS, ...REAL_CREATIVE_DEFS]) {
     const list = byPlan.get(c.planId) ?? [];
     list.push(c);
     byPlan.set(c.planId, list);

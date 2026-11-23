@@ -36,7 +36,7 @@ export const ANOMALIES: Anomaly[] = [
   {
     id: 'AN-001',
     type: 'cost_up',
-    target: '抖音效果账户 · 徒步鞋·精准成交（P-1021）',
+    target: '对照效果账户 B · 徒步鞋·精准成交（P-1021）',
     accountId: 'ACC-102',
     metric: '转化成本 CPA',
     current: `¥${cpa102Now.toFixed(2)}`,
@@ -93,7 +93,7 @@ export const ANOMALIES: Anomaly[] = [
   {
     id: 'AN-004',
     type: 'budget_pace',
-    target: '抖音品牌主账户 · 品牌词·人群包承接（P-1013）',
+    target: '对照品牌账户 A · 品牌词·人群包承接（P-1013）',
     accountId: 'ACC-101',
     metric: '预算使用率',
     current: '100%（受限）',
@@ -266,7 +266,7 @@ export const SUGGESTIONS: Suggestion[] = [
     title: '把高相似度人群包 LK-01 扩量到朋友圈账户',
     target: 'ACC-201 微信朋友圈',
     accountId: 'ACC-201',
-    problem: 'LK-01（户外核心人群 lookalike，相似度 0.82）在抖音侧 ROI 4.21，但朋友圈账户尚未使用该人群包，仍在跑通投。',
+    problem: 'LK-01（核心人群 lookalike，相似度 0.82）在对照平台 ROI 4.21，但朋友圈账户尚未使用该人群包，仍在跑通投。',
     evidence: [
       { label: 'LK-01 覆盖', value: '1,860 万人', compare: '朋友圈可触达约 620 万' },
       { label: 'LK-01 ROI', value: '4.21', compare: `朋友圈当前 ${roi(metricsOfAccount('ACC-201')).toFixed(2)}` },

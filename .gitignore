@@ -22,3 +22,4 @@ vite.config.ts.timestamp-*.mjs
 .vscode/
 .chrome*/
 .cp*/
+shot*.png

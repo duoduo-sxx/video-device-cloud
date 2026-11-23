@@ -2,7 +2,7 @@
   "name": "adlens-platform",
   "private": true,
   "version": "1.0.0",
-  "description": "投见 AdLens · 跨平台广告数据分析平台（纯前端 + Mock 数据，可打包 Windows 便携版桌面应用）",
+  "description": "投见 AdLens · 跨平台数据智能平台（纯前端 + Mock 数据，可打包 Windows 便携版桌面应用）",
   "main": "electron/main.cjs",
   "type": "module",
   "scripts": {

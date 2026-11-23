@@ -20,7 +20,7 @@ function createWindow() {
     minHeight: 720,
     autoHideMenuBar: true,
     backgroundColor: '#F5F7FA',
-    title: '投见 AdLens · 跨平台广告数据分析平台',
+    title: '投见 AdLens · 跨平台数据智能平台',
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,

@@ -1,5 +1,5 @@
 /* ============================================================
- * 投见 AdLens · 跨平台广告数据智能分析平台
+ * 投见 AdLens · 跨平台数据智能平台
  * 类型定义：全部围绕「投放数据处理 → 人群洞察 → 优化执行」闭环
  * ============================================================ */
 
@@ -20,7 +20,27 @@ export interface Platform {
   caliber: string;
 }
 
-export type AccountStatus = 'active' | 'paused' | 'auth_expired' | 'balance_low';
+export type AccountStatus = 'active' | 'paused' | 'auth_expired' | 'balance_low' | 'idle';
+
+/** 千川账户列表原始记录（来自真实 xlsx 快照，字段名已转英文） */
+export interface QianchuanAccountRaw {
+  followed: string;
+  id: string;
+  name: string;
+  industry1: string;
+  industry2: string;
+  group: string;
+  balance: number;
+  spend: number;
+  orders: number;
+  roi: number;
+  cpa: number;
+  gmv: number;
+  giftBalance: number;
+  cashBalance: number;
+  transfer: number;
+  transferCount: number;
+}
 
 export interface AdAccount {
   id: ID;
@@ -407,6 +427,7 @@ export const ACCOUNT_STATUS_LABEL: Record<AccountStatus, string> = {
   paused: '已暂停',
   auth_expired: '授权过期',
   balance_low: '余额预警',
+  idle: '未投放',
 };
 
 export const PLAN_STATUS_LABEL: Record<PlanStatus, string> = {

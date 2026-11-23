@@ -1,12 +1,18 @@
 import type { AdAccount, Platform, PlatformCode } from '@/types';
+import { QIANCHUAN_RECORDS } from './qianchuan';
+import { hash, rnd } from './seed';
 
-/** 广告主：栖野户外 OUTLAND（户外功能服饰 / 装备，客单价高，多平台投放） */
+/**
+ * 演示主体：跨平台投放账户群。
+ * 巨量千川为真实账户列表快照（595 个账户），其余 5 个平台保留 mock 用于跨平台对比演示。
+ * 源表没有日期字段，演示账期固定为 2026-10 / 环比 2026-09。
+ */
 export const BRAND = {
-  name: '栖野户外 OUTLAND',
-  shortName: '栖野户外',
-  category: '户外功能服饰与装备',
-  aovRef: 762,
-  owner: '品牌增长中心 · 效果投放组',
+  name: '全域效果投放账户群',
+  shortName: '全域投放',
+  category: '电商全域投放（真实账户 + 演示对照平台）',
+  aovRef: 92,
+  owner: '增长中心 · 投放分析组',
   period: '2026-10',
   prevPeriod: '2026-09',
   today: '2026-10-31',
@@ -15,11 +21,11 @@ export const BRAND = {
 export const PLATFORMS: Platform[] = [
   {
     code: 'oceanengine',
-    name: '巨量引擎',
-    product: '抖音信息流 / 千川',
-    short: '抖音',
+    name: '巨量千川',
+    product: '竞价（全域投放）· 账户列表快照',
+    short: '千川',
     color: '#111827',
-    caliber: '消耗含平台服务费，转化按「下单」计（不含取消）',
+    caliber: '真实账户快照：595 个账户中 43 个有消耗；表内「整体成交订单数」即转化，「整体成交金额」即 GMV。源表无日期/曝光/点击字段，日粒度为确定性派生',
   },
   {
     code: 'tencent',
@@ -69,50 +75,48 @@ export const PLATFORM_MAP: Record<PlatformCode, Platform> = PLATFORMS.reduce(
 );
 
 /**
- * 12 个投放账户，覆盖 6 个平台。
- * base 参数决定该账户的投放体量与效率基线：
- *   daily 基准日耗 / cpm 千次曝光成本 / ctr 点击率 / cvr 点击转化率 / aov 客单价
- * 这些参数只用于生成基础量，页面上所有比率均由基础量实时算出。
+ * 5 个对照平台的 12 个演示账户（原示例账户已改挂到非千川平台）。
+ * base 参数只用于生成日粒度基础量，页面上所有比率均由基础量实时算出。
  */
-export const ACCOUNTS: AdAccount[] = [
+const MOCK_ACCOUNTS: AdAccount[] = [
   {
     id: 'ACC-101',
-    platform: 'oceanengine',
-    name: '栖野·抖音品牌主账户',
-    advertiserId: '174829301',
+    platform: 'tencent',
+    name: '对照·品牌主账户 A',
+    advertiserId: 'demo-101',
     objective: '成交',
     status: 'active',
     balance: 186420.5,
     dailyBudget: 16000,
     lastSyncAt: '2026-10-31T08:12:40',
     owner: '陈默',
-    base: { daily: 13800, cpm: 31.6, ctr: 0.0312, cvr: 0.0049, aov: 768 },
+    base: { daily: 58000, cpm: 31.6, ctr: 0.0312, cvr: 0.0049, aov: 768 },
   },
   {
     id: 'ACC-102',
-    platform: 'oceanengine',
-    name: '栖野·抖音效果账户',
-    advertiserId: '174829302',
+    platform: 'kuaishou',
+    name: '对照·效果账户 B（素材疲劳演示）',
+    advertiserId: 'demo-102',
     objective: '成交',
     status: 'active',
     balance: 92310.2,
     dailyBudget: 12000,
     lastSyncAt: '2026-10-31T08:12:41',
     owner: '周雨',
-    base: { daily: 10400, cpm: 29.4, ctr: 0.0348, cvr: 0.0056, aov: 742 },
+    base: { daily: 52000, cpm: 29.4, ctr: 0.0348, cvr: 0.0056, aov: 742 },
   },
   {
     id: 'ACC-103',
-    platform: 'oceanengine',
-    name: '栖野·千川直播间',
-    advertiserId: '174829355',
+    platform: 'bilibili',
+    name: '对照·直播间账户 C',
+    advertiserId: 'demo-103',
     objective: '直播成交',
     status: 'active',
     balance: 42880,
     dailyBudget: 8000,
     lastSyncAt: '2026-10-31T08:12:42',
     owner: '周雨',
-    base: { daily: 6600, cpm: 34.2, ctr: 0.0406, cvr: 0.0072, aov: 596 },
+    base: { daily: 18000, cpm: 34.2, ctr: 0.0406, cvr: 0.0072, aov: 596 },
   },
   {
     id: 'ACC-201',
@@ -125,7 +129,7 @@ export const ACCOUNTS: AdAccount[] = [
     dailyBudget: 9000,
     lastSyncAt: '2026-10-31T08:15:02',
     owner: '李澈',
-    base: { daily: 7900, cpm: 52.4, ctr: 0.0142, cvr: 0.0068, aov: 812 },
+    base: { daily: 42000, cpm: 52.4, ctr: 0.0142, cvr: 0.0068, aov: 812 },
   },
   {
     id: 'ACC-202',
@@ -138,7 +142,7 @@ export const ACCOUNTS: AdAccount[] = [
     dailyBudget: 4500,
     lastSyncAt: '2026-10-31T08:15:03',
     owner: '李澈',
-    base: { daily: 3900, cpm: 18.6, ctr: 0.0208, cvr: 0.0031, aov: 688 },
+    base: { daily: 16000, cpm: 18.6, ctr: 0.0208, cvr: 0.0031, aov: 688 },
   },
   {
     id: 'ACC-301',
@@ -151,7 +155,7 @@ export const ACCOUNTS: AdAccount[] = [
     dailyBudget: 7000,
     lastSyncAt: '2026-10-31T08:18:20',
     owner: '孙岚',
-    base: { daily: 6100, cpm: 21.8, ctr: 0.0386, cvr: 0.0038, aov: 634 },
+    base: { daily: 38000, cpm: 21.8, ctr: 0.0386, cvr: 0.0038, aov: 634 },
   },
   {
     id: 'ACC-302',
@@ -164,7 +168,7 @@ export const ACCOUNTS: AdAccount[] = [
     dailyBudget: 3000,
     lastSyncAt: '2026-10-30T08:19:02',
     owner: '孙岚',
-    base: { daily: 2400, cpm: 19.2, ctr: 0.0302, cvr: 0.0026, aov: 612 },
+    base: { daily: 9000, cpm: 19.2, ctr: 0.0302, cvr: 0.0026, aov: 612 },
   },
   {
     id: 'ACC-401',
@@ -177,7 +181,7 @@ export const ACCOUNTS: AdAccount[] = [
     dailyBudget: 5500,
     lastSyncAt: '2026-10-31T08:20:11',
     owner: '王倩',
-    base: { daily: 4800, cpm: 24.6, ctr: 0.0254, cvr: 0.0052, aov: 706 },
+    base: { daily: 28000, cpm: 24.6, ctr: 0.0254, cvr: 0.0052, aov: 706 },
   },
   {
     id: 'ACC-402',
@@ -190,7 +194,7 @@ export const ACCOUNTS: AdAccount[] = [
     dailyBudget: 2200,
     lastSyncAt: '2026-10-31T08:20:12',
     owner: '王倩',
-    base: { daily: 1900, cpm: 28.2, ctr: 0.0362, cvr: 0.0086, aov: 848 },
+    base: { daily: 11000, cpm: 28.2, ctr: 0.0362, cvr: 0.0086, aov: 848 },
   },
   {
     id: 'ACC-501',
@@ -203,7 +207,7 @@ export const ACCOUNTS: AdAccount[] = [
     dailyBudget: 6000,
     lastSyncAt: '2026-10-29T08:22:45',
     owner: '赵一诺',
-    base: { daily: 5200, cpm: 62.8, ctr: 0.0448, cvr: 0.0062, aov: 796 },
+    base: { daily: 26000, cpm: 62.8, ctr: 0.0448, cvr: 0.0062, aov: 796 },
   },
   {
     id: 'ACC-502',
@@ -216,7 +220,7 @@ export const ACCOUNTS: AdAccount[] = [
     dailyBudget: 3500,
     lastSyncAt: '2026-10-31T08:22:46',
     owner: '赵一诺',
-    base: { daily: 3100, cpm: 58.4, ctr: 0.0492, cvr: 0.0074, aov: 826 },
+    base: { daily: 18000, cpm: 58.4, ctr: 0.0492, cvr: 0.0074, aov: 826 },
   },
   {
     id: 'ACC-601',
@@ -229,9 +233,47 @@ export const ACCOUNTS: AdAccount[] = [
     dailyBudget: 3000,
     lastSyncAt: '2026-10-31T08:25:30',
     owner: '陈默',
-    base: { daily: 2650, cpm: 25.4, ctr: 0.0168, cvr: 0.0034, aov: 738 },
+    base: { daily: 14000, cpm: 25.4, ctr: 0.0168, cvr: 0.0034, aov: 738 },
   },
 ];
+
+/**
+ * 巨量千川 595 个真实账户：
+ * - 表内字段原样落到 balance / spend / paidOrders / gmv 上（daily.ts 按总额拆分日粒度）
+ * - 552 个零消耗账户标记为 idle（未投放），与表内「有余额无消耗」一致
+ * - base 中的 cpm/ctr/cvr 仅用于派生曝光点击的确定性参数，不参与真实金额计算
+ */
+const r2 = (v: number, d = 2) => Math.round(v * 10 ** d) / 10 ** d;
+
+const QIANCHUAN_ACCOUNTS: AdAccount[] = QIANCHUAN_RECORDS.map((r) => {
+  const seed = hash(r.id);
+  const active = r.spend > 0;
+  const group = r.group.replace(/^\[|\]$/g, '').split(',')[0]?.trim() || '千川投放组';
+  return {
+    id: r.id,
+    platform: 'oceanengine',
+    name: r.name,
+    advertiserId: r.id,
+    objective: r.name.includes('直播') || r.name.includes('店播') ? '直播成交' : '成交',
+    status: active ? 'active' : 'idle',
+    balance: r.balance,
+    dailyBudget: active ? Math.ceil(r.spend / 31 / 1000) * 1000 : 0,
+    lastSyncAt: '2026-10-31T08:12:00',
+    owner: group,
+    base: {
+      daily: active ? r.spend / 31 : 0,
+      cpm: r2(28 + rnd(seed) * 22),
+      ctr: r2(0.018 + rnd(seed + 1) * 0.030, 4),
+      cvr: r2(0.003 + rnd(seed + 2) * 0.006, 4),
+      aov: r.orders ? r2(r.gmv / r.orders) : 90,
+    },
+  } satisfies AdAccount;
+});
+
+/** 全量账户 = 595 个真实千川账户 + 12 个对照平台演示账户 */
+export const ACCOUNTS: AdAccount[] = [...QIANCHUAN_ACCOUNTS, ...MOCK_ACCOUNTS];
+
+export const QIANCHUAN_ACCOUNT_IDS = new Set(QIANCHUAN_ACCOUNTS.map((a) => a.id));
 
 export const ACCOUNT_MAP = ACCOUNTS.reduce(
   (acc, a) => ({ ...acc, [a.id]: a }),

@@ -1,6 +1,7 @@
 import type { DataTable, MetricDef, QualityCheck, SyncJob } from '@/types';
 import { ACCOUNTS } from './platforms';
 import { hash, rnd } from './seed';
+import { DAILY } from './daily';
 import { AD_PLANS, CREATIVES, MATERIALS } from './campaigns';
 import { AUDIENCE, LOOKALIKE_PACKS, topByTgi } from './audience';
 import { ATTRIBUTION } from './attribution';
@@ -15,15 +16,16 @@ import { ANOMALY_TYPE_LABEL, SUGGESTION_TYPE_LABEL } from '@/types';
 export const SYNC_JOBS: SyncJob[] = ACCOUNTS.map((a, i) => {
   const failed = a.status === 'auth_expired';
   const paused = a.status === 'paused';
-  const rows = Math.round(12000 + rnd(hash(a.id)) * 48000);
+  const idle = a.status === 'idle';
+  const rows = idle ? 0 : Math.round(12000 + rnd(hash(a.id)) * 48000);
   return {
     id: `SYNC-${String(20261031).slice(0, 8)}${String(i + 1).padStart(3, '0')}`,
     accountId: a.id,
     platform: a.platform,
     type: i % 5 === 0 ? 'full' : 'incremental',
-    status: failed ? 'failed' : paused ? 'waiting' : i === 2 ? 'running' : 'success',
-    startedAt: failed ? '2026-10-29T08:19:03' : `2026-10-31T08:${String(10 + i).padStart(2, '0')}:00`,
-    durationSec: failed ? 0 : Math.round(18 + rnd(hash(a.id) + 7) * 130),
+    status: failed ? 'failed' : paused ? 'waiting' : idle ? 'success' : i === 2 ? 'running' : 'success',
+    startedAt: failed ? '2026-10-29T08:19:03' : `2026-10-31T08:${String(10 + (i % 50)).padStart(2, '0')}:00`,
+    durationSec: failed || idle ? 0 : Math.round(18 + rnd(hash(a.id) + 7) * 130),
     rows: failed ? 0 : rows,
     watermark: failed ? '2026-10-28 23:59:59' : '2026-10-30 23:59:59',
     retry: failed ? 3 : 0,
@@ -31,7 +33,9 @@ export const SYNC_JOBS: SyncJob[] = ACCOUNTS.map((a, i) => {
       ? '平台授权已过期（access_token 失效），连续 3 次重试失败，请重新授权'
       : paused
         ? '账户已暂停投放，本次跳过增量拉取'
-        : undefined,
+        : idle
+          ? '账户未投放（源表有余额无消耗），本次无增量数据'
+          : undefined,
   };
 });
 
@@ -93,7 +97,7 @@ export const QUALITY_CHECKS: QualityCheck[] = [
     table: 'dws_account_day',
     rule: '有效性：clicks ≤ impressions 且 conversions ≤ clicks',
     category: '有效性',
-    totalRows: 372,
+    totalRows: DAILY.length,
     affectedRows: 0,
     severity: 'low',
     status: 'passed',
@@ -443,14 +447,14 @@ export const DATA_TABLES: DataTable[] = [
     'dws_account_day',
     '账户日汇总',
     'DWS',
-    372,
+    DAILY.length,
     '96 KB',
     '每日 08:40',
     '数据工程 · 王倩',
     '2026-10-31T08:52:20',
     ['dwd_ad_plan_daily', 'ods_platform_account'],
     ['ads_anomaly', 'dws_funnel_day'],
-    '12 个账户 × 31 天的投放汇总（9 月为对比期，因此共 372 行）。总览页、账户页的所有数字都来自这张表。',
+    '607 个账户 × 61 天的投放汇总：千川真实账户按日拆分（月汇总严格等于源表），对照平台为演示派生。总览页、账户页的所有数字都来自这张表。',
     [
       { name: 'account_id', type: 'string', desc: '账户 ID' },
       { name: 'stat_date', type: 'date', desc: '日期' },
@@ -472,14 +476,14 @@ export const DATA_TABLES: DataTable[] = [
     'dws_plan_day',
     '计划日汇总',
     'DWS',
-    651,
+    AD_PLANS.length * 31,
     '148 KB',
     '每日 08:42',
     '数据工程 · 王倩',
     '2026-10-31T08:54:02',
     ['dwd_ad_plan_daily'],
     ['ads_budget_plan', 'ads_suggestion'],
-    '21 个计划 × 31 天。计划页、预算分配页的下钻基准，账户与计划之间满足 Σ计划 = 账户。',
+    '84 个计划（含 63 个千川真实账户派生计划）× 31 天。计划页、预算分配页的下钻基准，账户与计划之间满足 Σ计划 = 账户。',
     [
       { name: 'plan_id', type: 'string', desc: '计划 ID' },
       { name: 'stat_date', type: 'date', desc: '日期' },
@@ -696,7 +700,7 @@ export const TABLE_MAP = DATA_TABLES.reduce((acc, t2) => ({ ...acc, [t2.id]: t2 
 
 /** 今日调度流水（数仓页顶部的流程演示） */
 export const DAG_STEPS = [
-  { id: 'ods', name: 'ODS 抽取', layer: 'ODS', start: '08:00', duration: '14 分', status: 'success', rows: '8.6 万行', note: '12 个账户 11 个成功、1 个失败（ACC-501 授权过期）' },
+  { id: 'ods', name: 'ODS 抽取', layer: 'ODS', start: '08:00', duration: '14 分', status: 'success', rows: '8.6 万行', note: '607 个账户中 605 个成功、1 个失败（ACC-501 授权过期）、1 个等待（ACC-302 停投）' },
   { id: 'dwd', name: 'DWD 清洗与口径对齐', layer: 'DWD', start: '08:20', duration: '19 分', status: 'success', rows: '8.1 万行', note: '统一转化口径、时区归一、主键去重 128 行' },
   { id: 'dws', name: 'DWS 多维汇总', layer: 'DWS', start: '08:40', duration: '12 分', status: 'success', rows: '1.4 万行', note: '账户/计划/人群/素材/漏斗 5 张汇总表' },
   { id: 'ads', name: 'ADS 模型推理', layer: 'ADS', start: '09:00', duration: '15 分', status: 'success', rows: '8,300 行', note: '人群洞察 + 归因 + 异常诊断 + 建议生成' },

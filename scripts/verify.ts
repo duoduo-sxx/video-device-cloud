@@ -3,7 +3,8 @@
  * 运行：npx esbuild scripts/verify.ts --bundle --platform=node --format=esm \
  *        --outfile=scripts/verify.mjs --alias:@=./src && node scripts/verify.mjs
  */
-import { ACCOUNTS, PLATFORMS, PLATFORM_MAP, accountsOf } from '@/mocks/platforms';
+import { ACCOUNTS, PLATFORMS, PLATFORM_MAP, accountsOf, QIANCHUAN_ACCOUNT_IDS } from '@/mocks/platforms';
+import { QIANCHUAN_RECORDS, QIANCHUAN_TOTALS } from '@/mocks/qianchuan';
 import {
   ALL_DATES,
   CURRENT_PERIOD,
@@ -70,7 +71,8 @@ for (const p of PLATFORMS) {
 /* ---------- 3. 计划 → 账户 ---------- */
 for (const a of ACCOUNTS) {
   const plans = plansOfAccount(a.id);
-  ok(`[计划覆盖] ${a.id} 有计划`, plans.length > 0);
+  if (a.status === 'idle') ok(`[计划覆盖] ${a.id} 未投放账户无计划`, plans.length === 0, String(plans.length));
+  else ok(`[计划覆盖] ${a.id} 有计划`, plans.length > 0);
   const sum = sumMetrics(plans.map((p) => p.m));
   const acc = metricsOfAccount(a.id);
   for (const k of ['impressions', 'clicks', 'spend', 'conversions', 'paidOrders', 'gmv'] as (keyof Metrics)[]) {
@@ -266,10 +268,25 @@ for (const q of QUALITY_CHECKS) {
   const dup = new Set(DAILY.map((r) => `${r.accountId}-${r.date}`));
   ok('[数据] 无重复行', dup.size === DAILY.length);
   ok('[指标字典] 13 个', METRIC_DEFS.length === 13, String(METRIC_DEFS.length));
-  ok('[账户] 12 个', ACCOUNTS.length === 12, String(ACCOUNTS.length));
-  ok('[计划] 21 个', AD_PLANS.length === 21, String(AD_PLANS.length));
-  ok('[创意] 30 个', CREATIVES.length === 30, String(CREATIVES.length));
-  ok('[素材] 14 个', MATERIALS.length === 14, String(MATERIALS.length));
+  ok('[账户] 595 个真实千川账户', QIANCHUAN_RECORDS.length === 595, String(QIANCHUAN_RECORDS.length));
+  ok('[账户] 43 个真实账户有消耗', QIANCHUAN_RECORDS.filter((r) => r.spend > 0).length === 43);
+  ok('[账户] 607 = 595 真实 + 12 对照', ACCOUNTS.length === 607, String(ACCOUNTS.length));
+  {
+    const qc = metricsOfPlatform('oceanengine');
+    eq('[真实数据] 千川消耗 = 源表合计', qc.spend, QIANCHUAN_TOTALS.spend, 0.02);
+    eq('[真实数据] 千川订单 = 源表合计', qc.paidOrders, QIANCHUAN_TOTALS.orders, 0);
+    eq('[真实数据] 千川 GMV = 源表合计', qc.gmv, QIANCHUAN_TOTALS.gmv, 0.02);
+    for (const r of QIANCHUAN_RECORDS.slice(0, 30)) {
+      const m = metricsOfAccount(r.id);
+      eq(`[真实数据] ${r.id} 消耗`, m.spend, r.spend, 0.02);
+      eq(`[真实数据] ${r.id} 订单`, m.paidOrders, r.orders, 0);
+      eq(`[真实数据] ${r.id} GMV`, m.gmv, r.gmv, 0.02);
+      eq(`[真实数据] ${r.id} 余额`, ACCOUNTS.find((a) => a.id === r.id)!.balance, r.balance, 0.02);
+    }
+  }
+  ok('[计划] 每个有消耗账户至少 1 个', AD_PLANS.length >= QIANCHUAN_RECORDS.filter((r) => r.spend > 0).length + 21, String(AD_PLANS.length));
+  ok('[创意] 数量与计划匹配', CREATIVES.length >= AD_PLANS.length, String(CREATIVES.length));
+  ok('[素材] 通用素材池已补齐', MATERIALS.length === 20, String(MATERIALS.length));
   ok('[数仓] 21 张表', DATA_TABLES.length === 21, String(DATA_TABLES.length));
   ok('[数仓] 四层齐全', ['ODS','DWD','DWS','ADS'].every((l) => DATA_TABLES.some((t) => t.layer === l)));
 }
@@ -296,7 +313,10 @@ for (const q of QUALITY_CHECKS) {
     else pass++;
     if (!(r.paidOrders <= r.conversions)) failures.push(`[行级] ${r.accountId} ${r.date} 支付>转化`);
     else pass++;
-    if (!(r.gmv >= r.paidOrders * 50)) failures.push(`[行级] ${r.accountId} ${r.date} GMV 异常`);
+    // 真实账户客单价从几元到上百元都有（香薰/零食），不能用旧的 ¥50 下限
+    const aov = r.paidOrders ? r.gmv / r.paidOrders : 0;
+    if (!(r.paidOrders === 0 ? r.gmv === 0 : r.gmv > 0 && aov > 0 && aov < 5000))
+      failures.push(`[行级] ${r.accountId} ${r.date} GMV 异常`);
     else pass++;
     if (r.spend <= 0 || r.impressions <= 0) {
       failures.push(`[行级] ${r.accountId} ${r.date} 消耗/曝光为 0`);
@@ -310,12 +330,16 @@ for (const q of QUALITY_CHECKS) {
 {
   for (const a of ACCOUNTS) {
     const rows = DAILY.filter((r) => r.accountId === a.id);
-    if (a.status === 'auth_expired') {
+    if (a.status === 'idle') {
+      ok(`[状态一致] ${a.id} 未投放账户无日数据`, rows.length === 0, `${rows.length}`);
+      ok(`[状态一致] ${a.id} 未投放账户无消耗`, metricsOfAccount(a.id).spend === 0);
+    } else if (a.status === 'auth_expired') {
       ok(`[状态一致] ${a.id} 授权过期后无数据`, rows.length < ALL_DATES.length, `${rows.length}/${ALL_DATES.length}`);
     } else if (a.status === 'paused') {
       ok(`[状态一致] ${a.id} 停投账户仍有历史数据`, rows.length > 0);
     } else {
-      ok(`[状态一致] ${a.id} 正常账户数据完整`, rows.length === ALL_DATES.length, `${rows.length}/${ALL_DATES.length}`);
+      ok(`[状态一致] ${a.id} 正常账户有数据`, rows.length > 0, `${rows.length}/${ALL_DATES.length}`);
+      ok(`[状态一致] ${a.id} 正常账户覆盖两个账期`, rows.some((r) => r.date.startsWith('2026-09')) && rows.some((r) => r.date.startsWith('2026-10')));
     }
   }
 }

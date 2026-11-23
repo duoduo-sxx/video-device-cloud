@@ -22,6 +22,7 @@ import type {
 import { DIM_LABEL } from '@/types';
 import { totalMetrics, CURRENT_PERIOD } from './daily';
 import { AD_PLANS, PLAN_MAP } from './campaigns';
+import { QIANCHUAN_RECORDS } from './qianchuan';
 import { allocateInt, allocateMoney, cpa, roi, r2 } from '@/lib/metrics';
 import { hash, rnd } from './seed';
 
@@ -125,6 +126,27 @@ const PERSONAS: Record<string, Persona> = {
   'P-6011': { agePeak: 1, city: ['一线城市', '新一线城市'], interest: ['徒步登山', '户外露营'], device: 'Android 设备', hourPeak: 4, gender: '男性' },
 };
 
+/* 真实千川计划的人群倾向：源表没有人群字段，按账户一级行业给出可解释的确定性画像 */
+const INDUSTRY_PERSONA: Record<string, Persona> = {
+  美妆: { agePeak: 1, city: ['一线城市', '新一线城市'], interest: ['服饰穿搭', '户外露营'], device: 'iOS 设备', hourPeak: 5, gender: '女性' },
+  日化: { agePeak: 2, city: ['新一线城市', '二线城市'], interest: ['亲子家庭', '服饰穿搭'], device: 'Android 设备', hourPeak: 4, gender: '女性' },
+  服装配饰: { agePeak: 1, city: ['一线城市', '新一线城市'], interest: ['服饰穿搭'], device: 'iOS 设备', hourPeak: 5, gender: '女性' },
+  食品饮料: { agePeak: 2, city: ['二线城市', '三线及以下'], interest: ['亲子家庭', '其他兴趣'], device: 'Android 设备', hourPeak: 4 },
+  家居建材: { agePeak: 2, city: ['新一线城市', '二线城市'], interest: ['亲子家庭', '服饰穿搭'], hourPeak: 3, gender: '女性' },
+  '3C及电器': { agePeak: 2, city: ['一线城市', '新一线城市'], interest: ['运动户外', '其他兴趣'], device: 'Android 设备', hourPeak: 5, gender: '男性' },
+  母婴宠物: { agePeak: 1, city: ['新一线城市', '二线城市'], interest: ['亲子家庭'], hourPeak: 3, gender: '女性' },
+  文化用品: { agePeak: 0, city: ['二线城市', '三线及以下'], interest: ['服饰穿搭', '亲子家庭'], hourPeak: 5 },
+  实体书籍: { agePeak: 1, city: ['一线城市', '新一线城市'], interest: ['其他兴趣'], device: 'iOS 设备', hourPeak: 2 },
+  汽车: { agePeak: 2, city: ['一线城市', '新一线城市'], interest: ['运动户外', '其他兴趣'], device: 'iOS 设备', hourPeak: 3, gender: '男性' },
+};
+
+for (const plan of AD_PLANS) {
+  if (!plan.id.startsWith('QC-P-')) continue;
+  const raw = QIANCHUAN_RECORDS.find((r) => r.id === plan.accountId);
+  const p = INDUSTRY_PERSONA[raw?.industry1 ?? ''] ?? { agePeak: 1, city: ['新一线城市'], interest: ['服饰穿搭'], hourPeak: 5 };
+  PERSONAS[plan.id] = { ...p, ageSpread: 1.15, hourSpread: 1.05 };
+}
+
 /* ============================================================
  * 三、分布生成：基准分布 × 人群倾向，再归一化到 1000‰
  * ============================================================ */
@@ -167,7 +189,9 @@ function permilleOf(planId: string, dim: AudienceDim): number[] {
       raw = mixTags('city', p.city ?? [], 0.5);
       break;
     case 'interest':
-      raw = mixTags('interest', p.interest ?? [], 0.5);
+      // 真实行业画像的兴趣更集中，否则「亲子家庭/其他兴趣」这类大盘高占比标签
+      // 会被误判为定向失效（浓度提升倍数 <1）
+      raw = mixTags('interest', p.interest ?? [], planId.startsWith('QC-P-') ? 0.8 : 0.5);
       break;
     case 'device':
       raw = mixTags('device', p.device ? [p.device] : [], 0.4, 1.5, 0.7);
@@ -333,8 +357,22 @@ const TARGETING_DEFS: TargetingDef[] = [
   { planId: 'P-6011', age: ['18-24 岁'], interest: ['徒步登山', '户外露营', '运动户外'] },
 ];
 
+/* 真实千川计划的定向：按行业画像收窄年龄/城市/兴趣，使「设定 vs 实际」可对比 */
+const REAL_TARGETING: TargetingDef[] = AD_PLANS.filter((p) => p.id.startsWith('QC-P-')).map((p) => {
+  const persona = PERSONAS[p.id];
+  const ageLabels = labelsOf('age');
+  const peak = Math.min(3, Math.max(1, persona.agePeak));
+  return {
+    planId: p.id,
+    age: [ageLabels[peak - 1], ageLabels[peak], ageLabels[peak + 1]],
+    city: persona.city ?? ['新一线城市', '二线城市'],
+    interest: (persona.interest ?? []).slice(0, 3),
+    hour: [labelsOf('hour')[persona.hourPeak]],
+  };
+});
+
 export const TARGETING: Record<string, PlanTargeting> = AD_PLANS.reduce((acc, plan) => {
-  const def = TARGETING_DEFS.find((d) => d.planId === plan.id);
+  const def = [...TARGETING_DEFS, ...REAL_TARGETING].find((d) => d.planId === plan.id);
   const all = (dim: AudienceDim) => labelsOf(dim);
   acc[plan.id] = {
     planId: plan.id,
@@ -572,6 +610,40 @@ export const LOOKALIKE_PACKS: LookalikePack[] = [
     createdAt: '2026-10-24T16:33:00',
   },
 ];
+
+/* 真实千川账户的人群包：由消耗 Top 计划反推种子人群（演示派生） */
+const REAL_PACK_PLANS = AD_PLANS.filter((p) => p.id.startsWith('QC-P-'))
+  .sort((a, b) => b.m.spend - a.m.spend)
+  .slice(0, 8)
+  .map((p) => p.id);
+if (REAL_PACK_PLANS.length) {
+  LOOKALIKE_PACKS.push(
+    {
+      id: 'LK-07',
+      name: '千川高转化行业人群包',
+      seed: '真实账户中 ROI 最高的成交用户种子（演示派生）',
+      coverage: 12_800_000,
+      similarity: 0.85,
+      status: 'used',
+      planCount: 4,
+      planIds: REAL_PACK_PLANS.slice(0, 4),
+      roi: 4.36,
+      createdAt: '2026-10-20T09:30:00',
+    },
+    {
+      id: 'LK-08',
+      name: '千川直播间高价值人群包',
+      seed: '直播成交账户近 30 日下单用户（演示派生）',
+      coverage: 6_420_000,
+      similarity: 0.79,
+      status: 'building',
+      planCount: 4,
+      planIds: REAL_PACK_PLANS.slice(4, 8),
+      roi: 3.92,
+      createdAt: '2026-10-24T14:12:00',
+    },
+  );
+}
 
 export function packsOf(planId: string): LookalikePack[] {
   return LOOKALIKE_PACKS.filter((p) => p.planIds.includes(planId));

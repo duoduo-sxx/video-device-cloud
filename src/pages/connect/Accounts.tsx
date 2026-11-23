@@ -120,7 +120,7 @@ export default function Accounts() {
     <>
       <PageHeader
         title="投放账户"
-        desc="6 个投放平台共 12 个账户；账户是数据接入的最小单位，授权状态与余额直接决定能否正常拉数与投放"
+        desc={`6 个投放平台共 ${ACCOUNTS.length} 个账户（千川 595 个真实账户 + 12 个对照平台演示账户）；账户是数据接入的最小单位，授权状态与余额决定能否正常拉数与投放`}
         breadcrumb="数据接入 / 投放账户"
         actions={
           <>
@@ -130,6 +130,12 @@ export default function Accounts() {
           </>
         }
       />
+
+      <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-ctl border border-line bg-[#F9FAFB] px-4 py-2.5 text-2xs text-ink-3">
+        <span className="font-medium text-ink-2">口径</span>
+        <span>千川账户来自真实 xlsx 快照：ID、名称、行业、账户组、余额、消耗、订单、ROI、订单成本、成交金额原样保留</span>
+        <span>552 个零消耗账户标记为「未投放」，与源表「有余额无消耗」一致；点击账户看派生计划与素材</span>
+      </div>
 
       <Card className="mb-4">
         <div className="flex flex-wrap items-center justify-between gap-3">

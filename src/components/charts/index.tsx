@@ -127,7 +127,7 @@ export function StackedArea({
       <AreaChart data={data} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
         <defs>
           {series.map((s, i) => (
-            <linearGradient key={s.key} id={`sg-${s.key}`} x1="0" y1="0" x2="0" y2="1">
+            <linearGradient key={s.key} id={`sg-${i}`} x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor={CHART_COLORS[i % CHART_COLORS.length]} stopOpacity={0.22} />
               <stop offset="100%" stopColor={CHART_COLORS[i % CHART_COLORS.length]} stopOpacity={0.02} />
             </linearGradient>
@@ -158,7 +158,7 @@ export function StackedArea({
             stackId="1"
             stroke={CHART_COLORS[i % CHART_COLORS.length]}
             strokeWidth={1.6}
-            fill={`url(#sg-${s.key})`}
+            fill={`url(#sg-${i})`}
             dot={false}
           />
         ))}
